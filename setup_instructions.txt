@@ -98,10 +98,7 @@ create policy "dev_all_round_endpoints" on public.round_endpoints for all using 
 create policy "dev_all_round_logs" on public.round_logs for all using (true) with check (true);
 ```
 
-### 6. Start the App
-Start the Next.js development server:
-```bash
-npm run dev
-```
+chmod +x start.sh
+./start.sh
 
 Open `http://localhost:3000` in your browser to start the simulation!

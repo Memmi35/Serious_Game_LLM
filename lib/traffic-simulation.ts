@@ -217,7 +217,7 @@ export function bprTime(freeTime: number, flow: number, capacity: number): numbe
 // ML-based travel time prediction (calls the Python backend)
 export async function predictTravelTimeML(edges: EdgeParams[]): Promise<number[]> {
   try {
-    const response = await fetch('/api/ml/predict', {
+    const response = await fetch('http://localhost:3000/api/ml/predict', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
