@@ -1,0 +1,107 @@
+This project uses a Next.js frontend, a Supabase PostgreSQL database, and a Python Random Forest machine learning model.
+
+To run this simulation on a completely new laptop, follow these steps:
+
+### 1. Prerequisites
+- **Node.js**: Install Node.js (v18 or higher) from nodejs.org
+- **Python 3**: Install Python (v3.9 or higher) from python.org
+
+### 2. Node Dependencies
+Open a terminal in the project folder and run:
+```bash
+npm install
+```
+
+### 3. Python Dependencies
+The Random Forest ML model requires a few Python packages to run `model/predict_edges.py`. Run:
+```bash
+pip3 install scikit-learn numpy joblib
+```
+*(Depending on how Python is installed, you might use `pip` instead of `pip3`)*
+
+### 4. Environment Variables
+Create a file named `.env.local` in the root folder of the project containing your Supabase credentials:
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+### 5. Supabase Database Setup
+If setting up a totally fresh Supabase project, execute this SQL script in the Supabase SQL Editor to create the required tables and disable restrictions during dev:
+
+```sql
+create extension if not exists "pgcrypto";
+
+create table if not exists public.simulation_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  current_round int not null,
+  total_rounds int not null,
+  grid_size int not null,
+  is_complete boolean not null default false,
+  current_origin text not null,
+  current_destination text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.traffic_edges (
+  id text primary key,
+  from_node text not null,
+  to_node text not null,
+  free_time numeric not null,
+  capacity int not null,
+  base_flow int not null,
+  current_flow int not null,
+  travel_time numeric not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.round_endpoints (
+  id bigserial primary key,
+  session_id uuid not null references public.simulation_sessions(id) on delete cascade,
+  round int not null,
+  origin text not null,
+  destination text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.round_logs (
+  id bigserial primary key,
+  session_id uuid not null references public.simulation_sessions(id) on delete cascade,
+  round int not null,
+  user_id text not null,
+  origin text not null,
+  destination text not null,
+  chosen_route text not null,
+  decision_latency numeric not null,
+  predicted_time numeric not null,
+  realized_time numeric not null,
+  route_a_flow numeric not null,
+  route_b_flow numeric not null,
+  route_c_flow numeric not null,
+  grid_size int not null,
+  route_path text[] not null,
+  route_edges jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.simulation_sessions enable row level security;
+alter table public.traffic_edges enable row level security;
+alter table public.round_endpoints enable row level security;
+alter table public.round_logs enable row level security;
+
+create policy "dev_all_simulation_sessions" on public.simulation_sessions for all using (true) with check (true);
+create policy "dev_all_traffic_edges" on public.traffic_edges for all using (true) with check (true);
+create policy "dev_all_round_endpoints" on public.round_endpoints for all using (true) with check (true);
+create policy "dev_all_round_logs" on public.round_logs for all using (true) with check (true);
+```
+
+### 6. Start the App
+Start the Next.js development server:
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser to start the simulation!
