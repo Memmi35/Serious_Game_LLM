@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -107,9 +107,9 @@ function convertAPIRouteToRoute(
   };
 }
 
-export function TrafficSimulation() {
+export function TrafficSimulation({ initialSessionId = null }: { initialSessionId?: string | null }) {
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
   const [hoveredRouteName, setHoveredRouteName] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("simulation");
   const [loading, setLoading] = useState(false);
@@ -226,13 +226,19 @@ export function TrafficSimulation() {
   }, [gameState, sessionId]);
 
   const handleNextRound = useCallback(async () => {
-    if (!gameState || !sessionId) return;
+    if (!sessionId) return;
 
     // Fetch current state from server
     setLoading(true);
     try {
       const response = await fetch(`/api/get-state?session_id=${sessionId}`);
       const data = await response.json();
+
+      if (data.status === "waiting") {
+        setGameState((prev) => prev ? { ...prev, phase: "transitioning" } : null);
+        setLoading(false);
+        return;
+      }
 
       if (data.status === "initialized") {
         const edges = data.network.edges.map(convertAPIEdgeToEdge);
@@ -243,30 +249,58 @@ export function TrafficSimulation() {
           routes[name] = convertAPIRouteToRoute(name, apiRoute, edges);
         }
 
-        setGameState((prev) =>
-          prev
-            ? {
-                ...prev,
-                currentRound: data.current_round,
-                origin: data.origin,
-                destination: data.destination,
-                nodes,
-                edges,
-                routes,
-                predictedTimes: data.predicted_times,
-                selectedRoute: null,
-                phase: "selecting",
-                gameOver: data.game_over,
-              }
-            : null
-        );
+        setGameState((prev) => {
+          if (!prev) {
+            return {
+              currentRound: data.current_round,
+              totalRounds: data.num_rounds,
+              origin: data.origin,
+              destination: data.destination,
+              nodes,
+              edges,
+              routes,
+              predictedTimes: data.predicted_times,
+              selectedRoute: null,
+              logs: data.logs || [],
+              gameOver: data.game_over,
+              phase: "selecting",
+              roundEndpoints: [],
+              roundStartTime: Date.now()
+            };
+          }
+          
+          return {
+            ...prev,
+            currentRound: data.current_round,
+            origin: data.origin,
+            destination: data.destination,
+            nodes,
+            edges,
+            routes,
+            predictedTimes: data.predicted_times,
+            selectedRoute: null,
+            phase: "selecting",
+            gameOver: data.game_over,
+          };
+        });
         roundStartTimeRef.current = Date.now();
       }
     } catch (error) {
       console.error("Error fetching next round:", error);
     }
     setLoading(false);
-  }, [gameState, sessionId]);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (initialSessionId) {
+      handleNextRound();
+      // Poll game state every 2.5 seconds if waiting for admin
+      const interval = setInterval(() => {
+        handleNextRound();
+      }, 2500);
+      return () => clearInterval(interval);
+    }
+  }, [initialSessionId, handleNextRound]);
 
   const handleRestart = useCallback(async () => {
     setSessionId(null);
@@ -275,6 +309,26 @@ export function TrafficSimulation() {
   }, [handleStartGame]);
 
   if (!gameState) {
+    if (initialSessionId) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              </div>
+              <CardTitle className="text-2xl">Waiting for Host</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-center">
+                The game has not started yet. Waiting for the admin to begin...
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-lg w-full">
@@ -562,9 +616,9 @@ export function TrafficSimulation() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-6">
-                        {gameState.logs.map((log, index) => (
+                        {[...gameState.logs].reverse().map((log, index) => (
                           <div
-                            key={index}
+                            key={`${log.round}-${index}`}
                             className="p-4 rounded-lg border bg-card"
                           >
                             <div className="flex items-center justify-between mb-4">

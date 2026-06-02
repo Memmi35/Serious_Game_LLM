@@ -8,38 +8,50 @@ export async function GET(request: NextRequest) {
     const sessionId = request.nextUrl.searchParams.get("session_id");
 
     if (!sessionId) {
-      return NextResponse.json({
-        status: "not_initialized",
-        current_round: 0,
-      });
+      return NextResponse.json({ status: "not_initialized", current_round: 0 });
     }
 
-    // Get session
     const { data: session, error: sessionError } = await supabase
       .from("simulation_sessions")
-      .select("*")
+      .select("*, game_rooms(*)")
       .eq("id", sessionId)
       .single();
 
     if (sessionError || !session) {
+      return NextResponse.json({ status: "not_initialized", current_round: 0 });
+    }
+
+    const room = session.game_rooms;
+
+    if (room.status === "waiting") {
       return NextResponse.json({
-        status: "not_initialized",
-        current_round: 0,
+        status: "waiting",
+        room_id: room.id,
+        message: "Waiting for admin to start the game.",
       });
     }
 
-    const gridSize = session.grid_size;
-    const nodes = generateNodes(gridSize);
+    if (session.has_submitted && room.status !== "completed") {
+      return NextResponse.json({
+        status: "waiting",
+        room_id: room.id,
+        message: "Choice submitted. Waiting for all players and admin to advance.",
+      });
+    }
 
-    // Get edges from database
+    // All state comes from the room, not the session
+    const origin = room.current_origin;
+    const destination = room.current_destination;
+    const nodes = generateNodes();
+
     const { data: dbEdges, error: edgesError } = await supabase
       .from("traffic_edges")
-      .select("*");
-
+      .select("*")
+      .eq("room_id", room.id);
     if (edgesError) throw edgesError;
 
-    const edges = dbEdges.map((e) => ({
-      id: e.id,
+    const edges = (dbEdges ?? []).map((e) => ({
+      id: e.id.replace(`${room.id}_`, ""),
       from: e.from_node,
       to: e.to_node,
       freeTime: e.free_time,
@@ -49,26 +61,21 @@ export async function GET(request: NextRequest) {
       travelTime: e.travel_time,
     }));
 
-    // Find routes for current round
-    const routes = findRoutes(edges, session.current_origin, session.current_destination);
+    const routes = findRoutes(edges, origin, destination);
 
-    // Get logs for this session
-    const { data: dbLogs, error: logsError } = await supabase
+    const { data: dbLogs } = await supabase
       .from("round_logs")
       .select("*")
       .eq("session_id", sessionId)
       .order("round", { ascending: true });
 
-    if (logsError) throw logsError;
-
-    // Prepare network data
     const networkNodes = nodes.map((node) => ({
       id: node.id,
       label: node.label,
       x: node.x * 100,
       y: node.y * 100,
-      is_origin: node.id === session.current_origin,
-      is_destination: node.id === session.current_destination,
+      is_origin: node.id === origin,
+      is_destination: node.id === destination,
     }));
 
     const networkEdges = edges.map((edge) => ({
@@ -82,8 +89,8 @@ export async function GET(request: NextRequest) {
       travel_time: edge.travelTime,
     }));
 
-    // Prepare routes data
     const routesData: Record<string, { path: string[]; length: number; predicted_time: number; total_free_time: number }> = {};
+    const predictedTimes: Record<string, number> = {};
     for (const [name, route] of Object.entries(routes)) {
       routesData[name] = {
         path: route.path,
@@ -91,50 +98,25 @@ export async function GET(request: NextRequest) {
         predicted_time: route.totalTravelTime,
         total_free_time: route.totalFreeTime,
       };
-    }
-
-    // Calculate predicted times
-    const predictedTimes: Record<string, number> = {};
-    for (const [name, route] of Object.entries(routes)) {
       predictedTimes[name] = Math.round(route.totalTravelTime * 100) / 100;
     }
-
-    // Format logs
-    const logs = dbLogs.map((log) => ({
-      round: log.round,
-      user_id: log.user_id,
-      chosen_route: log.chosen_route,
-      decision_latency: log.decision_latency,
-      predicted_time: log.predicted_time,
-      realized_time: log.realized_time,
-      route_A_flow: log.route_a_flow,
-      route_B_flow: log.route_b_flow,
-      route_C_flow: log.route_c_flow,
-      grid_size: log.grid_size,
-      origin: log.origin,
-      destination: log.destination,
-      route_path: log.route_path,
-      route_edges: log.route_edges,
-    }));
 
     return NextResponse.json({
       status: "initialized",
       session_id: sessionId,
-      current_round: session.current_round,
-      num_rounds: session.total_rounds,
+      current_round: room.current_round,
+      num_rounds: room.total_rounds,
       predicted_times: predictedTimes,
       network: { nodes: networkNodes, edges: networkEdges },
       routes: routesData,
-      origin: session.current_origin,
-      destination: session.current_destination,
-      logs,
-      game_over: session.is_complete,
+      logs: dbLogs ?? [],
+      origin,
+      destination,
+      game_over: room.status === "completed",
+      room_status: room.status,
     });
   } catch (error) {
     console.error("Error getting state:", error);
-    return NextResponse.json(
-      { status: "error", message: "Failed to get state" },
-      { status: 500 }
-    );
+    return NextResponse.json({ status: "error", message: "Failed to get state" }, { status: 500 });
   }
 }

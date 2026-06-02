@@ -32,9 +32,19 @@ If setting up a totally fresh Supabase project, execute this SQL script in the S
 ```sql
 create extension if not exists "pgcrypto";
 
+create table if not exists public.game_rooms (
+  id text primary key,
+  status text not null default 'waiting',
+  current_round int not null default 1,
+  total_rounds int not null default 5,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.simulation_sessions (
   id uuid primary key default gen_random_uuid(),
+  room_id text references public.game_rooms(id) on delete cascade,
   user_id text not null,
+  user_name text,
   current_round int not null,
   total_rounds int not null,
   grid_size int not null,
@@ -47,6 +57,7 @@ create table if not exists public.simulation_sessions (
 
 create table if not exists public.traffic_edges (
   id text primary key,
+  room_id text references public.game_rooms(id) on delete cascade,
   from_node text not null,
   to_node text not null,
   free_time numeric not null,
@@ -87,11 +98,13 @@ create table if not exists public.round_logs (
   created_at timestamptz not null default now()
 );
 
+alter table public.game_rooms enable row level security;
 alter table public.simulation_sessions enable row level security;
 alter table public.traffic_edges enable row level security;
 alter table public.round_endpoints enable row level security;
 alter table public.round_logs enable row level security;
 
+create policy "dev_all_game_rooms" on public.game_rooms for all using (true) with check (true);
 create policy "dev_all_simulation_sessions" on public.simulation_sessions for all using (true) with check (true);
 create policy "dev_all_traffic_edges" on public.traffic_edges for all using (true) with check (true);
 create policy "dev_all_round_endpoints" on public.round_endpoints for all using (true) with check (true);

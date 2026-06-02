@@ -105,11 +105,30 @@ function generateSnakePath(): string[] {
 export function generateRoundEndpoints(): Array<[string, string]> {
   const endpoints: Array<[string, string]> = [];
   const gridPoints = generateSnakePath();
-  const remainingPoints = gridPoints.filter((p) => p !== "0-0");
+  let availablePoints = gridPoints.filter((p) => p !== "0-0");
+  const pathPoints = ["0-0"];
+  let currentPoint = "0-0";
 
-  // Shuffle and pick NUM_ROUNDS points
-  const shuffled = [...remainingPoints].sort(() => Math.random() - 0.5);
-  const pathPoints = ["0-0", ...shuffled.slice(0, NUM_ROUNDS)];
+  for (let i = 0; i < NUM_ROUNDS; i++) {
+    // Filter available points to ensure Manhattan distance is >= 4
+    let validNextPoints = availablePoints.filter((p) => {
+      const [x1, y1] = currentPoint.split("-").map(Number);
+      const [x2, y2] = p.split("-").map(Number);
+      return Math.abs(x1 - x2) + Math.abs(y1 - y2) >= 4;
+    });
+
+    // Fallback if no valid point exists (safety net)
+    if (validNextPoints.length === 0) {
+      validNextPoints = availablePoints;
+    }
+
+    const nextIndex = Math.floor(Math.random() * validNextPoints.length);
+    const nextPoint = validNextPoints[nextIndex];
+    
+    pathPoints.push(nextPoint);
+    availablePoints = availablePoints.filter((p) => p !== nextPoint);
+    currentPoint = nextPoint;
+  }
 
   for (let i = 0; i < NUM_ROUNDS; i++) {
     endpoints.push([pathPoints[i], pathPoints[i + 1]]);
@@ -482,13 +501,14 @@ export function generateCandidateRoutes(
     allPaths = generateManualRoutes(origin, destination);
   }
 
-  // Sort paths by total free_time (minimal free_time = best route)
-  const pathsWithTime = allPaths.map((path) => ({
-    path,
-    freeTime: computePathTotalFreeTime(path, edges),
-  }));
-  pathsWithTime.sort((a, b) => a.freeTime - b.freeTime);
+// Sort paths by total travel time (minimal travel time = best route)
+const pathsWithTime = allPaths.map((path) => ({
+  path,
+  travelTime: computeRouteTime(path, edges), // uses edge.travelTime (congested/predicted)
+  freeTime: computePathTotalFreeTime(path, edges), // keep for display as totalFreeTime
+}));
 
+pathsWithTime.sort((a, b) => a.travelTime - b.travelTime);
   // Select 3 routes with lowest total free time
   const routeNames = ["Route A", "Route B", "Route C"];
   const routes: Record<string, Route> = {};
@@ -498,14 +518,14 @@ export function generateCandidateRoutes(
     const pathEdges = getPathEdges(pathData.path, edges);
 
     routes[routeNames[i]] = {
-      name: routeNames[i],
-      path: pathData.path,
-      edges: pathEdges,
-      totalTravelTime: computeRouteTime(pathData.path, edges),
-      totalFreeTime: pathData.freeTime,
-      totalFlow: computeRouteTotalFlow(pathData.path, edges),
-      congestionLevel: getCongestionLevel(pathEdges),
-    };
+  name: routeNames[i],
+  path: pathData.path,
+  edges: pathEdges,
+  totalTravelTime: pathData.travelTime,
+  totalFreeTime: pathData.freeTime,
+  totalFlow: computeRouteTotalFlow(pathData.path, edges),
+  congestionLevel: getCongestionLevel(pathEdges),
+};
   }
 
   return routes;
