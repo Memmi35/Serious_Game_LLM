@@ -4,7 +4,6 @@ import {
   generateNodes,
   findRoutes,
   computeTravelTime,
-  predictTravelTimeML,
 } from "@/lib/traffic-simulation";
 
 export async function POST(request: NextRequest) {
@@ -36,7 +35,6 @@ export async function POST(request: NextRequest) {
     const room = session.game_rooms;
     const origin = room.current_origin;
     const destination = room.current_destination;
-    const nodes = generateNodes();
 
     // Load current shared edges
     const { data: dbEdges, error: edgesError } = await supabase
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
       .eq("room_id", room.id);
     if (edgesError) throw edgesError;
 
-    let edges = (dbEdges ?? []).map((e) => ({
+    const edges = (dbEdges ?? []).map((e) => ({
       id: e.id,
       from: e.from_node,
       to: e.to_node,
@@ -68,68 +66,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "error", message: "Invalid route selection" }, { status: 400 });
     }
 
+    // Use current predicted time (based on current flow state - same for all users)
     const predictedTime = selectedRouteData.totalTravelTime;
 
-    // Atomically increment flow on each edge of the chosen route
-    for (let i = 0; i < selectedRouteData.path.length - 1; i++) {
-      const fromNode = selectedRouteData.path[i];
-      const toNode = selectedRouteData.path[i + 1];
-      const edge = edges.find(
-        (e) => {
-          const stripped = e.id.replace(`${room.id}_`, "");
-          const match = displayEdges.find(
-            (d) => d.id === stripped &&
-              ((d.from === fromNode && d.to === toNode) ||
-               (d.from === toNode && d.to === fromNode))
-          );
-          return !!match;
-        }
-      );
-      if (edge) {
-        await supabase.rpc("increment_edge_flow", {
-          edge_id: edge.id,
-          increment_by: 1,
-        });
-      }
-    }
-
-    // Re-fetch edges to get true state after atomic increments
-    const { data: freshDbEdges } = await supabase
-      .from("traffic_edges")
-      .select("*")
-      .eq("room_id", room.id);
-
-    edges = (freshDbEdges ?? []).map((e) => ({
-      id: e.id,
-      from: e.from_node,
-      to: e.to_node,
-      freeTime: e.free_time,
-      capacity: e.capacity,
-      baseFlow: e.base_flow,
-      flow: e.current_flow,
-      travelTime: e.travel_time,
-    }));
-
-    // Recompute travel times
-    try {
-      const mlPredictions = await predictTravelTimeML(edges);
-      edges = edges.map((edge, index) => ({ ...edge, travelTime: mlPredictions[index] }));
-    } catch {
-      edges = edges.map((edge) => ({
-        ...edge,
-        travelTime: computeTravelTime(edge.freeTime, edge.flow, edge.capacity),
-      }));
-    }
-
-    // Write updated travel times back
-    for (const edge of edges) {
-      await supabase
-        .from("traffic_edges")
-        .update({ travel_time: edge.travelTime, updated_at: new Date().toISOString() })
-        .eq("id", edge.id);
-    }
-
-    // Calculate realized time
+    // Calculate realized time based on CURRENT edge state (not incrementing flow yet)
+    // This ensures all users who select before admin advances see the same predicted times
     const strippedEdges = edges.map((e) => ({ ...e, id: e.id.replace(`${room.id}_`, "") }));
     let realizedTime = 0;
     for (let i = 0; i < selectedRouteData.path.length - 1; i++) {
@@ -160,7 +101,7 @@ export async function POST(request: NextRequest) {
       routeFlows[name] = Math.round(totalFlow * 100) / 100;
     }
 
-    // Log the round
+    // Log the round (store the choice, flow updates happen when admin advances round)
     await supabase.from("round_logs").insert({
       session_id: sessionId,
       round: room.current_round,
@@ -179,7 +120,7 @@ export async function POST(request: NextRequest) {
       grid_size: session.grid_size,
     });
 
-    // Mark this user as submitted — do NOT advance round
+    // Mark this user as submitted — do NOT advance round or update flows
     await supabase
       .from("simulation_sessions")
       .update({ has_submitted: true, updated_at: new Date().toISOString() })
