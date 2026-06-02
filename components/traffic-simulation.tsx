@@ -23,6 +23,9 @@ import {
   MapPin,
   Navigation,
   Loader2,
+  Users,
+  RefreshCw,
+  Clock,
 } from "lucide-react";
 
 // Convert API response to frontend format
@@ -113,7 +116,18 @@ export function TrafficSimulation({ initialSessionId = null }: { initialSessionI
   const [hoveredRouteName, setHoveredRouteName] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("simulation");
   const [loading, setLoading] = useState(false);
+  const [changingChoice, setChangingChoice] = useState(false);
   const roundStartTimeRef = useRef<number>(Date.now());
+
+  // State for submitted waiting view
+  const [submittedState, setSubmittedState] = useState<{
+    playerChoice: string | null;
+    playerRealizedTime: number | null;
+    choiceDistribution: Record<string, number>;
+    totalSubmitted: number;
+    routes: Record<string, Route>;
+    predictedTimes: Record<string, number>;
+  } | null>(null);
 
   const handleStartGame = useCallback(async () => {
     setLoading(true);
@@ -225,6 +239,36 @@ export function TrafficSimulation({ initialSessionId = null }: { initialSessionI
     setHoveredRouteName(null);
   }, [gameState, sessionId]);
 
+  const handleChangeChoice = useCallback(async (newRouteName: string) => {
+    if (!sessionId || !submittedState) return;
+    if (newRouteName === submittedState.playerChoice) return;
+
+    setChangingChoice(true);
+    try {
+      const response = await fetch("/api/change-choice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          new_route: newRouteName,
+        }),
+      });
+      const data = await response.json();
+
+      if (data.status === "success") {
+        const result = data.round_result;
+        setSubmittedState(prev => prev ? {
+          ...prev,
+          playerChoice: newRouteName,
+          playerRealizedTime: result.realized_time,
+        } : null);
+      }
+    } catch (error) {
+      console.error("Error changing choice:", error);
+    }
+    setChangingChoice(false);
+  }, [sessionId, submittedState]);
+
   const handleNextRound = useCallback(async () => {
     if (!sessionId) return;
 
@@ -236,6 +280,62 @@ export function TrafficSimulation({ initialSessionId = null }: { initialSessionI
 
       if (data.status === "waiting") {
         setGameState((prev) => prev ? { ...prev, phase: "transitioning" } : null);
+        setSubmittedState(null);
+        setLoading(false);
+        return;
+      }
+
+      // Handle submitted_waiting status - show distribution and allow changing choice
+      if (data.status === "submitted_waiting") {
+        const edges = data.network.edges.map(convertAPIEdgeToEdge);
+        const nodes = data.network.nodes.map(convertAPINodeToNode);
+
+        const routes: Record<string, Route> = {};
+        for (const [name, apiRoute] of Object.entries(data.routes as Record<string, APIRoute>)) {
+          routes[name] = convertAPIRouteToRoute(name, apiRoute, edges);
+        }
+
+        setSubmittedState({
+          playerChoice: data.player_choice,
+          playerRealizedTime: data.player_realized_time,
+          choiceDistribution: data.choice_distribution || {},
+          totalSubmitted: data.total_submitted || 0,
+          routes,
+          predictedTimes: data.predicted_times,
+        });
+
+        setGameState((prev) => {
+          if (!prev) {
+            return {
+              currentRound: data.current_round,
+              totalRounds: data.num_rounds,
+              origin: data.origin,
+              destination: data.destination,
+              nodes,
+              edges,
+              routes,
+              predictedTimes: data.predicted_times,
+              selectedRoute: routes[data.player_choice] || null,
+              logs: [],
+              gameOver: false,
+              phase: "submitted_waiting",
+              roundEndpoints: [],
+              roundStartTime: Date.now()
+            };
+          }
+          return {
+            ...prev,
+            currentRound: data.current_round,
+            origin: data.origin,
+            destination: data.destination,
+            nodes,
+            edges,
+            routes,
+            predictedTimes: data.predicted_times,
+            selectedRoute: routes[data.player_choice] || null,
+            phase: "submitted_waiting",
+          };
+        });
         setLoading(false);
         return;
       }
@@ -283,6 +383,7 @@ export function TrafficSimulation({ initialSessionId = null }: { initialSessionI
             gameOver: data.game_over,
           };
         });
+        setSubmittedState(null); // Clear submitted state when moving to new round
         roundStartTimeRef.current = Date.now();
       }
     } catch (error) {
@@ -473,7 +574,7 @@ export function TrafficSimulation({ initialSessionId = null }: { initialSessionI
                         hoveredRouteName={hoveredRouteName}
                         onRouteHover={setHoveredRouteName}
                         selectedRoute={
-                          gameState.phase === "viewing"
+                          gameState.phase === "viewing" || gameState.phase === "submitted_waiting"
                             ? gameState.selectedRoute
                             : null
                         }
@@ -492,6 +593,121 @@ export function TrafficSimulation({ initialSessionId = null }: { initialSessionI
                           hoveredRouteName={hoveredRouteName}
                           disabled={loading}
                         />
+                      ) : gameState.phase === "submitted_waiting" && submittedState ? (
+                        <div className="space-y-4">
+                          {/* Your Choice Section */}
+                          <div className="text-center">
+                            <h3 className="text-lg font-semibold text-green-600 mb-2">
+                              Choice Submitted!
+                            </h3>
+                            <p className="text-muted-foreground">
+                              You chose{" "}
+                              <span className="font-medium text-foreground">
+                                {submittedState.playerChoice}
+                              </span>{" "}
+                              with a realized time of{" "}
+                              <span className="font-medium text-foreground">
+                                {submittedState.playerRealizedTime?.toFixed(1)} minutes
+                              </span>
+                            </p>
+                          </div>
+
+                          {/* Realized Time Display */}
+                          <div className="p-4 rounded-lg bg-green-500/10 border border-green-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="h-4 w-4 text-green-600" />
+                              <span className="font-medium text-green-600">Your Realized Travel Time</span>
+                            </div>
+                            <p className="text-2xl font-bold text-green-700">
+                              {submittedState.playerRealizedTime?.toFixed(1)} minutes
+                            </p>
+                          </div>
+
+                          {/* Choice Distribution */}
+                          <div className="p-4 rounded-lg bg-muted/50">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">Choice Distribution</span>
+                              <Badge variant="outline" className="ml-auto">
+                                {submittedState.totalSubmitted} players
+                              </Badge>
+                            </div>
+                            <div className="space-y-2">
+                              {Object.entries(submittedState.routes).map(([name, route]) => {
+                                const count = submittedState.choiceDistribution[name] || 0;
+                                const percentage = submittedState.totalSubmitted > 0 
+                                  ? Math.round((count / submittedState.totalSubmitted) * 100) 
+                                  : 0;
+                                const isSelected = name === submittedState.playerChoice;
+                                
+                                return (
+                                  <div 
+                                    key={name} 
+                                    className={`p-3 rounded-lg border ${
+                                      isSelected ? 'border-primary bg-primary/5' : 'border-border'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className={`font-medium ${isSelected ? 'text-primary' : ''}`}>
+                                        {name} {isSelected && '(Your choice)'}
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {count} player{count !== 1 ? 's' : ''} ({percentage}%)
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-muted rounded-full h-2">
+                                      <div 
+                                        className={`h-2 rounded-full ${
+                                          name === 'Route A' ? 'bg-blue-500' :
+                                          name === 'Route B' ? 'bg-violet-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Change Choice Section */}
+                          <div className="p-4 rounded-lg border border-dashed">
+                            <div className="flex items-center gap-2 mb-3">
+                              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">Change Your Choice</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              You can change your route selection before the admin advances to the next round.
+                            </p>
+                            <div className="flex gap-2 flex-wrap">
+                              {Object.entries(submittedState.routes).map(([name]) => (
+                                <Button
+                                  key={name}
+                                  variant={name === submittedState.playerChoice ? "default" : "outline"}
+                                  size="sm"
+                                  disabled={changingChoice || name === submittedState.playerChoice}
+                                  onClick={() => handleChangeChoice(name)}
+                                  className={
+                                    name === 'Route A' ? 'border-blue-500 hover:bg-blue-500/10' :
+                                    name === 'Route B' ? 'border-violet-500 hover:bg-violet-500/10' : 
+                                    'border-orange-500 hover:bg-orange-500/10'
+                                  }
+                                >
+                                  {changingChoice && name !== submittedState.playerChoice && (
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  )}
+                                  {name}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Waiting Message */}
+                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Waiting for admin to advance round...</span>
+                          </div>
+                        </div>
                       ) : (
                         <div className="space-y-4">
                           <div className="text-center">

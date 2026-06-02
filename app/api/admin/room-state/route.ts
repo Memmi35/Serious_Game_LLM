@@ -23,7 +23,35 @@ export async function GET(request: NextRequest) {
 
     if (sessionsError) throw sessionsError;
 
-    return NextResponse.json({ room, sessions });
+    // Get choice distribution for current round
+    const sessionIds = (sessions || []).map(s => s.id);
+    let choiceDistribution: Record<string, number> = {};
+    let submittedCount = 0;
+    
+    if (sessionIds.length > 0) {
+      const { data: roundLogs } = await supabase
+        .from("round_logs")
+        .select("chosen_route")
+        .eq("round", room.current_round)
+        .in("session_id", sessionIds);
+
+      submittedCount = roundLogs?.length || 0;
+      roundLogs?.forEach(log => {
+        choiceDistribution[log.chosen_route] = (choiceDistribution[log.chosen_route] || 0) + 1;
+      });
+    }
+
+    // Count how many have submitted
+    const submittedSessions = (sessions || []).filter(s => s.has_submitted).length;
+
+    return NextResponse.json({ 
+      room, 
+      sessions,
+      choiceDistribution,
+      submittedCount,
+      totalPlayers: sessions?.length || 0,
+      allSubmitted: submittedSessions === (sessions?.length || 0) && submittedSessions > 0
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
