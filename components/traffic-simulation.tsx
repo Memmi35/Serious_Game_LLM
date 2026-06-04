@@ -773,6 +773,53 @@ if (data.logs && data.logs.length > 0) {
                             </div>
                           </div>
 
+                                                    {/* Optimal Distribution */}
+                          <div className="p-4 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/30">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="flex items-center gap-2 flex-1">
+                                <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span className="font-medium text-muted-foreground">Optimal Distribution</span>
+                              </div>
+                              <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/40">
+                                🚧 Coming soon
+                              </Badge>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground mb-3 italic">
+                              This section will show the statistically optimal split of players across routes to minimize average travel time. We are working on it.
+                            </p>
+
+                            <div className="space-y-2 opacity-40 pointer-events-none select-none">
+                              {Object.keys(submittedState.routes).map((name) => {
+                                const fakeOptimal: Record<string, number> = {
+                                  "Route A": 40,
+                                  "Route B": 35,
+                                  "Route C": 25,
+                                };
+                                const pct = fakeOptimal[name] ?? 33;
+                                return (
+                                  <div key={name} className="p-3 rounded-lg border border-border bg-background">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-medium text-sm">{name}</span>
+                                      <span className="text-xs text-muted-foreground">{pct}% of players</span>
+                                    </div>
+                                    <div className="w-full bg-muted rounded-full h-2">
+                                      <div
+                                        className={`h-2 rounded-full ${
+                                          name === "Route A" ? "bg-blue-400" :
+                                          name === "Route B" ? "bg-violet-400" : "bg-orange-400"
+                                        }`}
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
 {/* Waiting Message */}
                           {submittedState.allSubmitted ? (
                             <div className="flex items-center justify-center gap-2 text-green-600">
