@@ -166,8 +166,8 @@ export function generateEdges(): EdgeParams[] {
       if (x < GRID_SIZE - 1) {
         const rightNode = `${x + 1}-${y}`;
         const freeTime = randomUniform(1.0, 2.0);
-        const capacity = randomInt(4, 8);
-        const baseFlow = randomInt(0, 3);
+        const capacity = randomInt(3, 6);
+        const baseFlow = randomInt(2, 5);
 
         edges.push({
           id: `${currentNode}-${rightNode}`,
@@ -196,9 +196,8 @@ export function generateEdges(): EdgeParams[] {
       if (y < GRID_SIZE - 1) {
         const downNode = `${x}-${y + 1}`;
         const freeTime = randomUniform(1.0, 2.0);
-        const capacity = randomInt(4, 8);
-        const baseFlow = randomInt(0, 3);
-
+        const capacity = randomInt(3, 6);
+        const baseFlow = randomInt(2, 5);
         edges.push({
           id: `${currentNode}-${downNode}`,
           from: currentNode,
@@ -504,8 +503,17 @@ export function generateCandidateRoutes(
 // Sort paths by total travel time (minimal travel time = best route)
 const pathsWithTime = allPaths.map((path) => ({
   path,
-  travelTime: computeRouteTime(path, edges), // uses edge.travelTime (congested/predicted)
-  freeTime: computePathTotalFreeTime(path, edges), // keep for display as totalFreeTime
+  travelTime: (() => {
+    // Use BPR with flow+1 so displayed time matches what gets saved as predicted_time
+    let total = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+      const edge = edges.find((e) => e.from === path[i] && e.to === path[i + 1])
+                ?? edges.find((e) => e.from === path[i + 1] && e.to === path[i]);
+      if (edge) total += bprTime(edge.freeTime, edge.flow + 1, edge.capacity);
+    }
+    return Math.round(total * 100) / 100;
+  })(),
+  freeTime: computePathTotalFreeTime(path, edges),
 }));
 
 pathsWithTime.sort((a, b) => a.travelTime - b.travelTime);

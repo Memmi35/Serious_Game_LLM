@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateEdges, generateRoundEndpoints } from "@/lib/traffic-simulation";
-
+import { generateEdges, generateRoundEndpoints, bprTime } from "@/lib/traffic-simulation";
 export async function POST() {
   try {
     const supabase = await createClient();
@@ -47,7 +46,7 @@ export async function POST() {
       capacity: edge.capacity,
       base_flow: edge.baseFlow,
       current_flow: edge.flow,
-      travel_time: edge.travelTime,
+      travel_time: bprTime(edge.freeTime, edge.baseFlow, edge.capacity),
     }));
     const { error: insertError } = await supabase
       .from("traffic_edges")

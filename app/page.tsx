@@ -18,10 +18,14 @@ export default function Home() {
       const response = await fetch("/api/admin/create-room", { method: "POST" });
       const data = await response.json();
       if (data.status === "success") {
+        console.log("[v0] Room created successfully:", data.room_id);
         router.push(`/admin/${data.room_id}`);
+      } else {
+        console.error("[v0] Room creation failed:", data.message);
+        setLoading(false);
       }
     } catch (e) {
-      console.error(e);
+      console.error("[v0] Error creating room:", e);
       setLoading(false);
     }
   };

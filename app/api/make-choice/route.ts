@@ -4,7 +4,6 @@ import {
   generateNodes,
   findRoutes,
   computeTravelTime,
-  predictTravelTimeML,
 } from "@/lib/traffic-simulation";
 
 export async function POST(request: NextRequest) {
@@ -36,7 +35,6 @@ export async function POST(request: NextRequest) {
     const room = session.game_rooms;
     const origin = room.current_origin;
     const destination = room.current_destination;
-    const nodes = generateNodes();
 
     // Load current shared edges
     const { data: dbEdges, error: edgesError } = await supabase
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
       .eq("room_id", room.id);
     if (edgesError) throw edgesError;
 
-    let edges = (dbEdges ?? []).map((e) => ({
+    const edges = (dbEdges ?? []).map((e) => ({
       id: e.id,
       from: e.from_node,
       to: e.to_node,
@@ -68,84 +66,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "error", message: "Invalid route selection" }, { status: 400 });
     }
 
-    const predictedTime = selectedRouteData.totalTravelTime;
+const strippedEdges = edges.map((e) => ({ ...e, id: e.id.replace(`${room.id}_`, "") }));
 
-    // Atomically increment flow on each edge of the chosen route
-    for (let i = 0; i < selectedRouteData.path.length - 1; i++) {
-      const fromNode = selectedRouteData.path[i];
-      const toNode = selectedRouteData.path[i + 1];
-      const edge = edges.find(
-        (e) => {
-          const stripped = e.id.replace(`${room.id}_`, "");
-          const match = displayEdges.find(
-            (d) => d.id === stripped &&
-              ((d.from === fromNode && d.to === toNode) ||
-               (d.from === toNode && d.to === fromNode))
-          );
-          return !!match;
-        }
-      );
-      if (edge) {
-        await supabase.rpc("increment_edge_flow", {
-          edge_id: edge.id,
-          increment_by: 1,
-        });
-      }
-    }
+// Predicted time = BPR with only this user's +1 flow added to their chosen route
+const { bprTime } = await import("@/lib/traffic-simulation");
+let predictedTime = 0;
+for (let i = 0; i < selectedRouteData.path.length - 1; i++) {
+  const fromNode = selectedRouteData.path[i];
+  const toNode = selectedRouteData.path[i + 1];
+  const edge = strippedEdges.find(
+    (e) => (e.from === fromNode && e.to === toNode) ||
+           (e.from === toNode && e.to === fromNode)
+  );
+  if (edge) predictedTime += bprTime(edge.freeTime, edge.flow + 1, edge.capacity);
+}
+predictedTime = Math.round(predictedTime * 100) / 100;
 
-    // Re-fetch edges to get true state after atomic increments
-    const { data: freshDbEdges } = await supabase
-      .from("traffic_edges")
-      .select("*")
-      .eq("room_id", room.id);
+// Realized time is unknown until admin advances — will be computed in room-action
+const realizedTime = null;
 
-    edges = (freshDbEdges ?? []).map((e) => ({
-      id: e.id,
-      from: e.from_node,
-      to: e.to_node,
-      freeTime: e.free_time,
-      capacity: e.capacity,
-      baseFlow: e.base_flow,
-      flow: e.current_flow,
-      travelTime: e.travel_time,
-    }));
-
-    // Recompute travel times
-    try {
-      const mlPredictions = await predictTravelTimeML(edges);
-      edges = edges.map((edge, index) => ({ ...edge, travelTime: mlPredictions[index] }));
-    } catch {
-      edges = edges.map((edge) => ({
-        ...edge,
-        travelTime: computeTravelTime(edge.freeTime, edge.flow, edge.capacity),
-      }));
-    }
-
-    // Write updated travel times back
-    for (const edge of edges) {
-      await supabase
-        .from("traffic_edges")
-        .update({ travel_time: edge.travelTime, updated_at: new Date().toISOString() })
-        .eq("id", edge.id);
-    }
-
-    // Calculate realized time
-    const strippedEdges = edges.map((e) => ({ ...e, id: e.id.replace(`${room.id}_`, "") }));
-    let realizedTime = 0;
-    for (let i = 0; i < selectedRouteData.path.length - 1; i++) {
-      const fromNode = selectedRouteData.path[i];
-      const toNode = selectedRouteData.path[i + 1];
-      const edge = strippedEdges.find(
-        (e) => (e.from === fromNode && e.to === toNode) ||
-               (e.from === toNode && e.to === fromNode)
-      );
-      if (edge) realizedTime += edge.travelTime;
-    }
-
-    const realizedTimes: Record<string, number> = {};
-    const routeFlows: Record<string, number> = {};
+const routeFlows: Record<string, number> = {};
     for (const [name, route] of Object.entries(routes)) {
-      let totalTime = 0;
       let totalFlow = 0;
       for (let i = 0; i < route.path.length - 1; i++) {
         const fromNode = route.path[i];
@@ -154,13 +95,12 @@ export async function POST(request: NextRequest) {
           (e) => (e.from === fromNode && e.to === toNode) ||
                  (e.from === toNode && e.to === fromNode)
         );
-        if (edge) { totalTime += edge.travelTime; totalFlow += edge.flow; }
+        if (edge) totalFlow += edge.flow;
       }
-      realizedTimes[name] = Math.round(totalTime * 100) / 100;
       routeFlows[name] = Math.round(totalFlow * 100) / 100;
     }
 
-    // Log the round
+    // Log the round (store the choice, flow updates happen when admin advances round)
     await supabase.from("round_logs").insert({
       session_id: sessionId,
       round: room.current_round,
@@ -169,8 +109,8 @@ export async function POST(request: NextRequest) {
       destination,
       chosen_route: chosenRoute,
       decision_latency: Math.round(decisionLatency * 100) / 100,
-      predicted_time: Math.round(predictedTime * 100) / 100,
-      realized_time: Math.round(realizedTime * 100) / 100,
+      predicted_time: predictedTime,
+      realized_time: 0,
       route_a_flow: routeFlows["Route A"] || 0,
       route_b_flow: routeFlows["Route B"] || 0,
       route_c_flow: routeFlows["Route C"] || 0,
@@ -179,7 +119,7 @@ export async function POST(request: NextRequest) {
       grid_size: session.grid_size,
     });
 
-    // Mark this user as submitted — do NOT advance round
+    // Mark this user as submitted — do NOT advance round or update flows
     await supabase
       .from("simulation_sessions")
       .update({ has_submitted: true, updated_at: new Date().toISOString() })
@@ -191,9 +131,9 @@ export async function POST(request: NextRequest) {
         round: room.current_round,
         chosen_route: chosenRoute,
         chosen_route_path: selectedRouteData.path,
-        predicted_time: Math.round(predictedTime * 100) / 100,
-        realized_time: Math.round(realizedTime * 100) / 100,
-        realized_times: realizedTimes,
+        predicted_time: predictedTime,
+        realized_time: null,
+        //realized_times: realizedTimes,
         origin,
         destination,
         route_flows: routeFlows,
