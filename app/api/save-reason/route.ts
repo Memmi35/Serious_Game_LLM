@@ -1,25 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import pool from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const { session_id, round, reason, reason_text } = await request.json();
 
     if (!session_id || !round || !reason) {
       return NextResponse.json({ status: "error", message: "Missing fields" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("round_logs")
-      .update({
-        choice_reason: reason,
-        choice_reason_text: reason_text || null,
-      })
-      .eq("session_id", session_id)
-      .eq("round", round);
-
-    if (error) throw error;
+    await pool.query(`
+      UPDATE round_logs
+      SET choice_reason = $1, choice_reason_text = $2
+      WHERE session_id = $3 AND round = $4
+    `, [reason, reason_text || null, session_id, round]);
 
     return NextResponse.json({ status: "success" });
   } catch (error) {

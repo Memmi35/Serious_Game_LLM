@@ -1,44 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import pool from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const { room_id, user_name } = await request.json();
 
-    const { data: room, error: roomError } = await supabase
-      .from("game_rooms")
-      .select("*")
-      .eq("id", room_id)
-      .single();
+    // Get room
+    const roomResult = await pool.query(`
+      SELECT * FROM game_rooms WHERE id = $1
+    `, [room_id]);
 
-    if (roomError || !room) {
+    if (roomResult.rows.length === 0) {
       return NextResponse.json({ status: "error", message: "Room not found" }, { status: 404 });
     }
+
+    const room = roomResult.rows[0];
+
     if (room.status === "completed") {
       return NextResponse.json({ status: "error", message: "Room already completed" }, { status: 400 });
     }
 
     const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // One session per user per room — reads origin/destination from room
-    const { data: session, error: sessionError } = await supabase
-      .from("simulation_sessions")
-      .insert({
-        room_id,
-        user_id: userId,
-        user_name: user_name || "Player",
-        current_round: room.current_round,
-        total_rounds: room.total_rounds,
-        grid_size: 5,
-        is_complete: false,
-        has_submitted: false,
-        // No per-user origin/destination — we use room's
-      })
-      .select()
-      .single();
+    // Insert session
+    const sessionResult = await pool.query(`
+      INSERT INTO simulation_sessions 
+        (room_id, user_id, user_name, current_round, total_rounds, grid_size, is_complete, has_submitted)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [
+      room_id,
+      userId,
+      user_name || "Player",
+      room.current_round,
+      room.total_rounds,
+      5,
+      false,
+      false,
+    ]);
 
-    if (sessionError) throw sessionError;
+    const session = sessionResult.rows[0];
 
     return NextResponse.json({
       status: "success",

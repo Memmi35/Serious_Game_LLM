@@ -1,37 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import pool from "@/lib/db";
 
 export async function GET(request: NextRequest) {
+  const client = await pool.connect();
   try {
-    const supabase = await createClient();
     const sessionId = request.nextUrl.searchParams.get("session_id");
-
     let logs;
 
     if (sessionId) {
       // Get logs for specific session
-      const { data, error } = await supabase
-        .from("round_logs")
-        .select("*")
-        .eq("session_id", sessionId)
-        .order("round", { ascending: true });
-
-      if (error) throw error;
-      logs = data;
+      const result = await client.query(
+        "SELECT * FROM round_logs WHERE session_id = $1 ORDER BY round ASC",
+        [sessionId]
+      );
+      logs = result.rows;
     } else {
       // Get all logs
-      const { data, error } = await supabase
-        .from("round_logs")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      logs = data;
+      const result = await client.query(
+        "SELECT * FROM round_logs ORDER BY created_at ASC"
+      );
+      logs = result.rows;
     }
 
     if (!logs || logs.length === 0) {
       return NextResponse.json(
-        { status: "error", message: "No simulation data" },
+        { status: "error", message: "No simulation data found" },
         { status: 400 }
       );
     }
@@ -53,38 +46,52 @@ export async function GET(request: NextRequest) {
       "route_path",
     ];
 
-    const rows = logs.map((log) =>
-      [
+    const rows = logs.map((log) => {
+      // Handle formatting arrays into clean readable CSV strings safely
+      let pathStr = "";
+      if (log.route_path) {
+        const parsedPath = typeof log.route_path === "string" 
+          ? JSON.parse(log.route_path) 
+          : log.route_path;
+        if (Array.isArray(parsedPath)) {
+          pathStr = parsedPath.join("->");
+        }
+      }
+
+      return [
         log.round,
-        log.user_id,
-        log.chosen_route,
-        log.decision_latency,
-        log.predicted_time,
-        log.realized_time,
-        log.route_a_flow,
-        log.route_b_flow,
-        log.route_c_flow,
-        log.grid_size,
-        log.origin,
-        log.destination,
-        log.route_path.join("->"),
-      ].join(",")
-    );
+        `"${log.user_id || ""}"`, // Wrap user string profiles in quotes
+        `"${log.chosen_route || ""}"`,
+        log.decision_latency ?? 0,
+        log.predicted_time ?? "",
+        log.realized_time ?? "",
+        log.route_a_flow ?? 0,
+        log.route_b_flow ?? 0,
+        log.route_c_flow ?? 0,
+        log.grid_size ?? 5,
+        `"${log.origin || ""}"`,
+        `"${log.destination || ""}"`,
+        `"${pathStr}"`, // Escape commas inside arrows if any exist
+      ].join(",");
+    });
 
     const csvContent = [headers.join(","), ...rows].join("\n");
 
-    // Return CSV as downloadable file
+    // Return CSV as downloadable file asset
     return new NextResponse(csvContent, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename=simulation_logs_${new Date().toISOString()}.csv`,
+        "Content-Disposition": `attachment; filename=simulation_logs_${new Date().toISOString().split('T')[0]}.csv`,
       },
     });
   } catch (error) {
-    console.error("Error downloading logs:", error);
+    console.error("Error downloading logs from Neon:", error);
     return NextResponse.json(
-      { status: "error", message: "Failed to download logs" },
+      { status: "error", message: "Failed to compile log sheets" },
       { status: 500 }
     );
+  } finally {
+    // Return connection to pool instantly
+    client.release();
   }
 }

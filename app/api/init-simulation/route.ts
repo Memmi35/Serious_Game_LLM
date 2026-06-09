@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse, NextRequest } from "next/server";
+import pool from "@/lib/db";
 import {
   generateNodes,
   generateEdges,
@@ -8,113 +8,96 @@ import {
 } from "@/lib/traffic-simulation";
 
 export async function POST() {
+  const client = await pool.connect();
   try {
-    const supabase = await createClient();
     const gridSize = 5;
     const totalRounds = 5;
     
     // Generate a unique user ID for this session
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
-    // Generate nodes
+    // Generate standard graph entities
     const nodes = generateNodes();
-    
-    // Check if traffic_edges table is empty, if so initialize with default edges
-    const { data: existingEdges, error: checkError } = await supabase
-      .from("traffic_edges")
-      .select("id")
-      .limit(1);
-    
-    if (checkError) throw checkError;
-    
-    let edges;
-    
-    if (!existingEdges || existingEdges.length === 0) {
-      // Initialize edges in the database
-      edges = generateEdges();
-      
-      const edgeInserts = edges.map((edge) => ({
-        id: edge.id,
-        from_node: edge.from,
-        to_node: edge.to,
-        free_time: edge.freeTime,
-        capacity: edge.capacity,
-        base_flow: edge.baseFlow,
-        current_flow: edge.flow,
-        travel_time: edge.travelTime,
-      }));
-      
-      const { error: insertError } = await supabase
-        .from("traffic_edges")
-        .insert(edgeInserts);
-      
-      if (insertError) throw insertError;
-    } else {
-      // Load existing edges from database
-      const { data: dbEdges, error: loadError } = await supabase
-        .from("traffic_edges")
-        .select("*");
-      
-      if (loadError) throw loadError;
-      
-      edges = dbEdges.map((e) => ({
-        id: e.id,
-        from: e.from_node,
-        to: e.to_node,
-        freeTime: e.free_time,
-        capacity: e.capacity,
-        baseFlow: e.base_flow,
-        flow: e.current_flow,
-        travelTime: e.travel_time,
-      }));
-    }
-    
-    // Generate round endpoints (pre-defined origin-destination pairs)
     const roundEndpoints = generateRoundEndpoints();
     const origin = roundEndpoints[0][0];
     const destination = roundEndpoints[0][1];
-    
-    // Create session in database
-    const { data: session, error: sessionError } = await supabase
-      .from("simulation_sessions")
-      .insert({
-        user_id: userId,
-        current_round: 1,
-        total_rounds: totalRounds,
-        grid_size: gridSize,
-        is_complete: false,
-        current_origin: origin,
-        current_destination: destination,
-      })
-      .select()
-      .single();
-    
-    if (sessionError) throw sessionError;
-    
-    // Store round endpoints
-    const endpointInserts = roundEndpoints.map((ep, index) => ({
-      session_id: session.id,
-      round: index + 1,
-      origin: ep[0],
-      destination: ep[1],
-    }));
-    
-    const { error: endpointsError } = await supabase
-      .from("round_endpoints")
-      .insert(endpointInserts);
-    
-    if (endpointsError) throw endpointsError;
-    
-    // Find routes for the first round
+
+    // 1. Create session (game room) in database
+    const sessionQuery = `
+      INSERT INTO simulation_sessions (
+        user_id, current_round, total_rounds, grid_size, is_complete, current_origin, current_destination
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id;
+    `;
+    const sessionResult = await client.query(sessionQuery, [
+      userId,
+      1,
+      totalRounds,
+      gridSize,
+      false,
+      origin,
+      destination,
+    ]);
+    const sessionId = sessionResult.rows[0].id;
+
+    // 2. Handle / clone isolated edges for this room instance
+    // Checking if baseline seed records exist
+    const edgeCheck = await client.query("SELECT id FROM traffic_edges LIMIT 1");
+    let edges;
+
+    if (edgeCheck.rows.length === 0) {
+      edges = generateEdges();
+      
+      // Batch insert baseline edges if table is completely empty
+      for (const edge of edges) {
+        await client.query(
+          `INSERT INTO traffic_edges (id, from_node, to_node, free_time, capacity, base_flow, current_flow, travel_time)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [edge.id, edge.from, edge.to, edge.freeTime, edge.capacity, edge.baseFlow, edge.flow, edge.travelTime]
+        );
+      }
+    } else {
+      // Load standard network configurations
+      const dbEdges = await client.query("SELECT * FROM traffic_edges");
+      edges = dbEdges.rows.map((e) => ({
+        id: e.id,
+        from: e.from_node,
+        to: e.to_node,
+        freeTime: Number(e.free_time),
+        capacity: Number(e.capacity),
+        baseFlow: Number(e.base_flow),
+        flow: Number(e.current_flow),
+        travelTime: Number(e.travel_time),
+      }));
+    }
+
+    // 3. Store the pre-calculated round endpoints linked via tracking session_id
+    for (let i = 0; i < roundEndpoints.length; i++) {
+      await client.query(
+        `INSERT INTO round_endpoints (session_id, round, origin, destination)
+         VALUES ($1, $2, $3, $4)`,
+        [sessionId, i + 1, roundEndpoints[i][0], roundEndpoints[i][1]]
+      );
+    }
+
+    // 4. Compute active choices for the current UI state matrix
     const routes = findRoutes(edges, origin, destination);
     
-    // Calculate predicted times
     const predictedTimes: Record<string, number> = {};
+    const routesData: Record<string, any> = {};
+
     for (const [name, route] of Object.entries(routes)) {
       predictedTimes[name] = Math.round(route.totalTravelTime * 100) / 100;
+      routesData[name] = {
+        path: route.path,
+        length: route.path.length - 1,
+        predicted_time: route.totalTravelTime,
+        total_free_time: route.totalFreeTime,
+      };
     }
-    
-    // Prepare network data for visualization
+
+    // Map network primitives onto snake_case API payload formats expected by frontend types
     const networkNodes = nodes.map((node) => ({
       id: node.id,
       label: node.label,
@@ -135,20 +118,9 @@ export async function POST() {
       travel_time: edge.travelTime,
     }));
 
-    // Prepare routes data
-    const routesData: Record<string, { path: string[]; length: number; predicted_time: number; total_free_time: number }> = {};
-    for (const [name, route] of Object.entries(routes)) {
-      routesData[name] = {
-        path: route.path,
-        length: route.path.length - 1,
-        predicted_time: route.totalTravelTime,
-        total_free_time: route.totalFreeTime,
-      };
-    }
-
     return NextResponse.json({
       status: "success",
-      session_id: session.id,
+      session_id: sessionId,
       user_id: userId,
       grid_size: gridSize,
       num_rounds: totalRounds,
@@ -159,11 +131,14 @@ export async function POST() {
       origin,
       destination,
     });
+
   } catch (error) {
-    console.error("Error initializing simulation:", error);
+    console.error("Neon setup failure inside init-simulation:", error);
     return NextResponse.json(
-      { status: "error", message: "Failed to initialize simulation" },
+      { status: "error", message: "Failed to initialize simulation room architecture" },
       { status: 500 }
     );
+  } finally {
+    client.release();
   }
 }

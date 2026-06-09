@@ -24,79 +24,92 @@ Create a file named `.env.local` in the root folder of the project containing yo
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-```
-
-### 5. Supabase Database Setup
-If setting up a totally fresh Supabase project, execute this SQL script in the Supabase SQL Editor to create the required tables and disable restrictions during dev:
-
-```sql
-create extension if not exists "pgcrypto";
-
-create table if not exists public.game_rooms (
-  id text primary key,
-  status text not null default 'waiting',
-  current_round int not null default 1,
-  total_rounds int not null default 5,
-  created_at timestamptz not null default now()
+------------------------------------------------------------------------------------------------------------------------------------
+-- 1. game_rooms
+CREATE TABLE game_rooms (
+  id text PRIMARY KEY,
+  status text NOT NULL,
+  current_round int4 NOT NULL DEFAULT 1,
+  total_rounds int4 NOT NULL DEFAULT 5,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  current_origin text,
+  current_destination text
 );
 
-create table if not exists public.simulation_sessions (
-  id uuid primary key default gen_random_uuid(),
-  room_id text references public.game_rooms(id) on delete cascade,
-  user_id text not null,
+-- 2. room_endpoints
+CREATE TABLE room_endpoints (
+  id int4 GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  room_id text REFERENCES game_rooms(id) ON DELETE CASCADE,
+  round int4,
+  origin text,
+  destination text
+);
+
+-- 3. traffic_edges
+CREATE TABLE traffic_edges (
+  id text PRIMARY KEY,
+  from_node text NOT NULL,
+  to_node text NOT NULL,
+  free_time numeric NOT NULL,
+  capacity int4 NOT NULL,
+  base_flow int4 NOT NULL,
+  current_flow int4 NOT NULL,
+  travel_time numeric NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  room_id text REFERENCES game_rooms(id) ON DELETE CASCADE
+);
+
+-- 4. simulation_sessions
+CREATE TABLE simulation_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id text NOT NULL,
+  current_round int4 NOT NULL DEFAULT 1,
+  total_rounds int4 NOT NULL DEFAULT 5,
+  grid_size int4 NOT NULL DEFAULT 5,
+  is_complete bool NOT NULL DEFAULT false,
+  current_origin text,
+  current_destination text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  room_id text REFERENCES game_rooms(id) ON DELETE CASCADE,
   user_name text,
-  current_round int not null,
-  total_rounds int not null,
-  grid_size int not null,
-  is_complete boolean not null default false,
-  current_origin text not null,
-  current_destination text not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  has_submitted bool NOT NULL DEFAULT false
 );
 
-create table if not exists public.traffic_edges (
-  id text primary key,
-  room_id text references public.game_rooms(id) on delete cascade,
-  from_node text not null,
-  to_node text not null,
-  free_time numeric not null,
-  capacity int not null,
-  base_flow int not null,
-  current_flow int not null,
-  travel_time numeric not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+-- 5. round_logs
+CREATE TABLE round_logs (
+  id int8 GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  session_id uuid REFERENCES simulation_sessions(id) ON DELETE CASCADE,
+  round int4 NOT NULL,
+  user_id text,
+  origin text,
+  destination text,
+  chosen_route text,
+  decision_latency numeric,
+  predicted_time numeric,
+  realized_time numeric,
+  route_a_flow numeric,
+  route_b_flow numeric,
+  route_c_flow numeric,
+  grid_size int4,
+  route_path text[],
+  route_edges jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  choice_reason text,
+  choice_reason_text text
 );
 
-create table if not exists public.round_endpoints (
-  id bigserial primary key,
-  session_id uuid not null references public.simulation_sessions(id) on delete cascade,
-  round int not null,
-  origin text not null,
-  destination text not null,
-  created_at timestamptz not null default now()
+-- 6. round_endpoints (old table, keep for compatibility)
+CREATE TABLE round_endpoints (
+  id int8 GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  session_id uuid REFERENCES simulation_sessions(id) ON DELETE CASCADE,
+  round int4,
+  origin text,
+  destination text,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
-
-create table if not exists public.round_logs (
-  id bigserial primary key,
-  session_id uuid not null references public.simulation_sessions(id) on delete cascade,
-  round int not null,
-  user_id text not null,
-  origin text not null,
-  destination text not null,
-  chosen_route text not null,
-  decision_latency numeric not null,
-  predicted_time numeric not null,
-  realized_time numeric not null,
-  route_a_flow numeric not null,
-  route_b_flow numeric not null,
-  route_c_flow numeric not null,
-  grid_size int not null,
-  route_path text[] not null,
-  route_edges jsonb not null,
-  created_at timestamptz not null default now()
-);
+---------------------------------------------------------------------------------------------------
 
 alter table public.game_rooms enable row level security;
 alter table public.simulation_sessions enable row level security;
@@ -113,5 +126,11 @@ create policy "dev_all_round_logs" on public.round_logs for all using (true) wit
 
 chmod +x start.sh
 ./start.sh
+
+
+
+postgresql://neondb_owner:npg_BHzbCgp4VrO2@ep-dark-sound-apzxla3o-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+
 
 Open `http://localhost:3000` in your browser to start the simulation!

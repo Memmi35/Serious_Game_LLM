@@ -1,81 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import pool from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const roomId = request.nextUrl.searchParams.get("room_id");
 
     if (!roomId) return NextResponse.json({ error: "Missing room_id" }, { status: 400 });
 
-    const { data: room, error: roomError } = await supabase
-      .from("game_rooms")
-      .select("*")
-      .eq("id", roomId)
-      .single();
+    // Get room
+    const roomResult = await pool.query(`
+      SELECT * FROM game_rooms WHERE id = $1
+    `, [roomId]);
 
-    if (roomError || !room) return NextResponse.json({ error: "Room not found" }, { status: 404 });
+    if (roomResult.rows.length === 0) {
+      return NextResponse.json({ error: "Room not found" }, { status: 404 });
+    }
+    const room = roomResult.rows[0];
 
-    const { data: sessions, error: sessionsError } = await supabase
-      .from("simulation_sessions")
-      .select("*")
-      .eq("room_id", roomId);
-
-    if (sessionsError) throw sessionsError;
+    // Get sessions
+    const sessionsResult = await pool.query(`
+      SELECT * FROM simulation_sessions WHERE room_id = $1
+    `, [roomId]);
+    const sessions = sessionsResult.rows;
+    const sessionIds = sessions.map((s: any) => s.id);
 
     // Get choice distribution for current round
-    const sessionIds = (sessions || []).map(s => s.id);
     let choiceDistribution: Record<string, number> = {};
     let submittedCount = 0;
-    
-    if (sessionIds.length > 0) {
-      const { data: roundLogs } = await supabase
-        .from("round_logs")
-        .select("chosen_route")
-        .eq("round", room.current_round)
-        .in("session_id", sessionIds);
 
-      submittedCount = roundLogs?.length || 0;
-      roundLogs?.forEach(log => {
+    if (sessionIds.length > 0) {
+      const roundLogsResult = await pool.query(`
+        SELECT chosen_route FROM round_logs
+        WHERE round = $1 AND session_id = ANY($2)
+      `, [room.current_round, sessionIds]);
+
+      submittedCount = roundLogsResult.rows.length;
+      roundLogsResult.rows.forEach((log: any) => {
         choiceDistribution[log.chosen_route] = (choiceDistribution[log.chosen_route] || 0) + 1;
       });
     }
 
-    // Count how many have submitted
-    const submittedSessions = (sessions || []).filter(s => s.has_submitted).length;
+    const submittedSessions = sessions.filter((s: any) => s.has_submitted).length;
 
-    // Get full game history if game is completed
+    // Get full game history if completed
     let gameHistory = null;
     if (room.status === "completed" && sessionIds.length > 0) {
-      const { data: allLogs } = await supabase
-        .from("round_logs")
-        .select("*")
-        .in("session_id", sessionIds)
-        .order("round", { ascending: true })
-        .order("created_at", { ascending: true });
+const allLogsResult = await pool.query(`
+        SELECT * FROM round_logs
+        WHERE session_id = ANY($1)
+        ORDER BY round ASC, created_at ASC
+      `, [sessionIds]);
+      const allLogs = allLogsResult.rows.map((log: any) => ({
+        ...log,
+        predicted_time: log.predicted_time ? parseFloat(log.predicted_time) : null,
+        realized_time: log.realized_time ? parseFloat(log.realized_time) : null,
+        decision_latency: log.decision_latency ? parseFloat(log.decision_latency) : null,
+        route_a_flow: log.route_a_flow ? parseFloat(log.route_a_flow) : null,
+        route_b_flow: log.route_b_flow ? parseFloat(log.route_b_flow) : null,
+        route_c_flow: log.route_c_flow ? parseFloat(log.route_c_flow) : null,
+      }));
 
-      // Organize logs by round
+      // Organize by round
       const roundsData: Record<number, any[]> = {};
-      allLogs?.forEach(log => {
+      allLogs.forEach((log: any) => {
         if (!roundsData[log.round]) roundsData[log.round] = [];
-        // Find session for this log to get user name
-        const session = sessions?.find(s => s.id === log.session_id);
+        const session = sessions.find((s: any) => s.id === log.session_id);
         roundsData[log.round].push({
           ...log,
           user_name: session?.user_name || "Player",
         });
       });
 
-      // Calculate stats per round
       const roundStats = Object.entries(roundsData).map(([round, logs]) => {
         const distribution: Record<string, number> = {};
         let totalPredicted = 0;
         let totalRealized = 0;
 
-        logs.forEach(log => {
+        logs.forEach((log: any) => {
           distribution[log.chosen_route] = (distribution[log.chosen_route] || 0) + 1;
-          totalPredicted += log.predicted_time || 0;
-          totalRealized += log.realized_time || 0;
+          totalPredicted += parseFloat(log.predicted_time) || 0;
+          totalRealized += parseFloat(log.realized_time) || 0;
         });
 
         return {
@@ -88,13 +92,12 @@ export async function GET(request: NextRequest) {
         };
       });
 
-      // Calculate overall stats per player
-      const playerStats = sessions?.map(session => {
-        const playerLogs = allLogs?.filter(l => l.session_id === session.id) || [];
-        const totalPredicted = playerLogs.reduce((sum, l) => sum + (l.predicted_time || 0), 0);
-        const totalRealized = playerLogs.reduce((sum, l) => sum + (l.realized_time || 0), 0);
+      const playerStats = sessions.map((session: any) => {
+        const playerLogs = allLogs.filter((l: any) => l.session_id === session.id);
+        const totalPredicted = playerLogs.reduce((sum: number, l: any) => sum + (parseFloat(l.predicted_time) || 0), 0);
+        const totalRealized = playerLogs.reduce((sum: number, l: any) => sum + (parseFloat(l.realized_time) || 0), 0);
         const routeCounts: Record<string, number> = {};
-        playerLogs.forEach(l => {
+        playerLogs.forEach((l: any) => {
           routeCounts[l.chosen_route] = (routeCounts[l.chosen_route] || 0) + 1;
         });
 
@@ -117,13 +120,13 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    return NextResponse.json({ 
-      room, 
+    return NextResponse.json({
+      room,
       sessions,
       choiceDistribution,
       submittedCount,
-      totalPlayers: sessions?.length || 0,
-      allSubmitted: submittedSessions === (sessions?.length || 0) && submittedSessions > 0,
+      totalPlayers: sessions.length,
+      allSubmitted: submittedSessions === sessions.length && submittedSessions > 0,
       gameHistory,
     });
   } catch (error) {

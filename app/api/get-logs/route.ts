@@ -1,49 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import pool from "@/lib/db";
 
 export async function GET(request: NextRequest) {
+  const client = await pool.connect();
   try {
-    const supabase = await createClient();
     const sessionId = request.nextUrl.searchParams.get("session_id");
+    let logs;
 
     if (!sessionId) {
       // Return all logs if no session specified
-      const { data: logs, error } = await supabase
-        .from("round_logs")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      return NextResponse.json({
-        status: "success",
-        logs: logs.map((log) => ({
-          round: log.round,
-          user_id: log.user_id,
-          chosen_route: log.chosen_route,
-          decision_latency: log.decision_latency,
-          predicted_time: log.predicted_time,
-          realized_time: log.realized_time,
-          route_A_flow: log.route_a_flow,
-          route_B_flow: log.route_b_flow,
-          route_C_flow: log.route_c_flow,
-          grid_size: log.grid_size,
-          origin: log.origin,
-          destination: log.destination,
-          route_path: log.route_path,
-          route_edges: log.route_edges,
-        })),
-      });
+      const result = await client.query(
+        "SELECT * FROM round_logs ORDER BY created_at ASC"
+      );
+      logs = result.rows;
+    } else {
+      // Return logs for specific session
+      const result = await client.query(
+        "SELECT * FROM round_logs WHERE session_id = $1 ORDER BY round ASC",
+        [sessionId]
+      );
+      logs = result.rows;
     }
-
-    // Return logs for specific session
-    const { data: logs, error } = await supabase
-      .from("round_logs")
-      .select("*")
-      .eq("session_id", sessionId)
-      .order("round", { ascending: true });
-
-    if (error) throw error;
 
     return NextResponse.json({
       status: "success",
@@ -52,23 +29,28 @@ export async function GET(request: NextRequest) {
         user_id: log.user_id,
         chosen_route: log.chosen_route,
         decision_latency: log.decision_latency,
-        predicted_time: log.predicted_time,
-        realized_time: log.realized_time,
+        // != null fix: ensures if time is 0, it won't mistakenly fall back to null
+        predicted_time: log.predicted_time != null ? Number(log.predicted_time) : null,
+        realized_time: log.realized_time != null ? Number(log.realized_time) : null,
         route_A_flow: log.route_a_flow,
         route_B_flow: log.route_b_flow,
         route_C_flow: log.route_c_flow,
         grid_size: log.grid_size,
         origin: log.origin,
         destination: log.destination,
-        route_path: log.route_path,
-        route_edges: log.route_edges,
+        // Handles automated array parsing or parsing JSON strings if stored as text rows
+        route_path: typeof log.route_path === "string" ? JSON.parse(log.route_path) : log.route_path,
+        route_edges: typeof log.route_edges === "string" ? JSON.parse(log.route_edges) : log.route_edges,
       })),
     });
   } catch (error) {
-    console.error("Error getting logs:", error);
+    console.error("Error getting logs from Neon:", error);
     return NextResponse.json(
       { status: "error", message: "Failed to get logs" },
       { status: 500 }
     );
+  } finally {
+    // Crucial for Neon connection pooling: release the client back to the pool
+    client.release();
   }
 }

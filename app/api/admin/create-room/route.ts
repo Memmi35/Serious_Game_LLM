@@ -1,61 +1,60 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import pool from "@/lib/db";
 import { generateEdges, generateRoundEndpoints, bprTime } from "@/lib/traffic-simulation";
+
 export async function POST() {
+  const client = await pool.connect();
   try {
-    const supabase = await createClient();
     const totalRounds = 5;
     const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Generate shared round endpoints for this room
     const roundEndpoints = generateRoundEndpoints();
     const origin = roundEndpoints[0][0];
     const destination = roundEndpoints[0][1];
 
-    // Create the room with first round's origin/destination
-    const { error: roomError } = await supabase.from("game_rooms").insert({
-      id: roomId,
-      status: "waiting",
-      current_round: 1,
-      total_rounds: totalRounds,
-      current_origin: origin,
-      current_destination: destination,
-    });
-    if (roomError) throw roomError;
+    await client.query("BEGIN");
 
-    // Store all round endpoints on the room
-    const endpointInserts = roundEndpoints.map((ep, index) => ({
-      room_id: roomId,
-      round: index + 1,
-      origin: ep[0],
-      destination: ep[1],
-    }));
-    const { error: endpointsError } = await supabase
-      .from("room_endpoints")
-      .insert(endpointInserts);
-    if (endpointsError) throw endpointsError;
+    // Create room
+    await client.query(`
+      INSERT INTO game_rooms (id, status, current_round, total_rounds, current_origin, current_destination)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [roomId, "waiting", 1, totalRounds, origin, destination]);
 
-    // Create room-scoped edges
+    // Insert round endpoints
+    for (let i = 0; i < roundEndpoints.length; i++) {
+      await client.query(`
+        INSERT INTO room_endpoints (room_id, round, origin, destination)
+        VALUES ($1, $2, $3, $4)
+      `, [roomId, i + 1, roundEndpoints[i][0], roundEndpoints[i][1]]);
+    }
+
+    // Insert edges
     const edges = generateEdges();
-    const edgeInserts = edges.map((edge) => ({
-      id: `${roomId}_${edge.id}`,
-      room_id: roomId,
-      from_node: edge.from,
-      to_node: edge.to,
-      free_time: edge.freeTime,
-      capacity: edge.capacity,
-      base_flow: edge.baseFlow,
-      current_flow: edge.flow,
-      travel_time: bprTime(edge.freeTime, edge.baseFlow, edge.capacity),
-    }));
-    const { error: insertError } = await supabase
-      .from("traffic_edges")
-      .insert(edgeInserts);
-    if (insertError) throw insertError;
+    for (const edge of edges) {
+      await client.query(`
+        INSERT INTO traffic_edges (id, room_id, from_node, to_node, free_time, capacity, base_flow, current_flow, travel_time)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `, [
+        `${roomId}_${edge.id}`,
+        roomId,
+        edge.from,
+        edge.to,
+        edge.freeTime,
+        edge.capacity,
+        edge.baseFlow,
+        edge.flow,
+        bprTime(edge.freeTime, edge.baseFlow, edge.capacity),
+      ]);
+    }
+
+    await client.query("COMMIT");
 
     return NextResponse.json({ status: "success", room_id: roomId });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error creating room:", error);
     return NextResponse.json({ status: "error", message: "Failed to create room" }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
