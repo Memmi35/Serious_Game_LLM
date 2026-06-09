@@ -129,8 +129,6 @@ chmod +x start.sh
 
 
 
-postgresql://neondb_owner:npg_BHzbCgp4VrO2@ep-dark-sound-apzxla3o-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-
 
 
 Open `http://localhost:3000` in your browser to start the simulation!
