@@ -76,8 +76,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "error", message: "Invalid route selection" }, { status: 400 });
     }
 
-    // Calculate realized time based on current edge state
-    let realizedTime = 0;
+// Predicted time = BPR with flow+1 (consistent with make-choice)
+    const { bprTime } = await import("@/lib/traffic-simulation");
+    let predictedTime = 0;
     for (let i = 0; i < newRouteData.path.length - 1; i++) {
       const fromNode = newRouteData.path[i];
       const toNode = newRouteData.path[i + 1];
@@ -85,8 +86,8 @@ export async function POST(request: NextRequest) {
         (e) => (e.from === fromNode && e.to === toNode) ||
                (e.from === toNode && e.to === fromNode)
       );
-      if (edge) realizedTime += edge.travelTime;
-    }
+if (edge) predictedTime += bprTime(edge.freeTime, edge.baseFlow + 1, edge.capacity);    }
+    predictedTime = Math.round(predictedTime * 100) / 100;
 
     const routeFlows: Record<string, number> = {};
     for (const [name, route] of Object.entries(routes)) {
@@ -108,8 +109,8 @@ export async function POST(request: NextRequest) {
       .from("round_logs")
       .update({
         chosen_route: newRoute,
-        predicted_time: Math.round(newRouteData.totalTravelTime * 100) / 100,
-        realized_time: Math.round(realizedTime * 100) / 100,
+        predicted_time: predictedTime,
+              realized_time: 0,
         route_a_flow: routeFlows["Route A"] || 0,
         route_b_flow: routeFlows["Route B"] || 0,
         route_c_flow: routeFlows["Route C"] || 0,
@@ -124,8 +125,8 @@ export async function POST(request: NextRequest) {
         round: room.current_round,
         chosen_route: newRoute,
         chosen_route_path: newRouteData.path,
-        predicted_time: Math.round(newRouteData.totalTravelTime * 100) / 100,
-        realized_time: Math.round(realizedTime * 100) / 100,
+        predicted_time: predictedTime,
+        realized_time: 0,
         origin,
         destination,
         route_flows: routeFlows,

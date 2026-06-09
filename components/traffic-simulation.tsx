@@ -109,21 +109,30 @@ function convertAPIRouteToRoute(
     congestionLevel: avgRatio < 0.5 ? "low" : avgRatio < 0.8 ? "medium" : "high",
   };
 }
-
 export function TrafficSimulation({ initialSessionId = null }: { initialSessionId?: string | null }) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
   const [hoveredRouteName, setHoveredRouteName] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("simulation");
   const [loading, setLoading] = useState(false);
-  const [changingChoice, setChangingChoice] = useState(false);
+const [changingChoice, setChangingChoice] = useState(false);
   const [changeChoiceError, setChangeChoiceError] = useState<string | null>(null);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [revealedFinal, setRevealedFinal] = useState(false);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const roundStartTimeRef = useRef<number>(Date.now());
   const gameStateRef = useRef<GameState | null>(null);
 
 useEffect(() => {
   gameStateRef.current = gameState;
 }, [gameState]);
+
+useEffect(() => {
+  if (gameState?.phase === "selecting") {
+   // roundStartTimeRef.current = Date.now();
+  }
+}, [gameState?.phase]);
 
   // State for submitted waiting view
 const [submittedState, setSubmittedState] = useState<{
@@ -168,7 +177,7 @@ const [submittedState, setSubmittedState] = useState<{
           roundEndpoints: [],
           roundStartTime: Date.now(),
         });
-        roundStartTimeRef.current = Date.now();
+       // roundStartTimeRef.current = Date.now();
         setActiveTab("simulation");
       }
     } catch (error) {
@@ -176,6 +185,9 @@ const [submittedState, setSubmittedState] = useState<{
     }
     setLoading(false);
   }, []);
+const [choiceReason, setChoiceReason] = useState<string | null>(null);
+  const [choiceReasonText, setChoiceReasonText] = useState("");
+  const [reasonSaved, setReasonSaved] = useState(false);
 
   const handleSelectRoute = useCallback(async (routeName: string) => {
     if (!gameState || !sessionId) return;
@@ -313,6 +325,12 @@ const handleNextRound = useCallback(async () => {
       if (data.status === "waiting") {
         setGameState((prev) => prev ? { ...prev, phase: "transitioning" } : null);
         setSubmittedState(null);
+        setCountdown(null);
+        setRevealedFinal(false);
+        setChoiceReason(null);
+        setChoiceReasonText("");
+        setReasonSaved(false);
+        if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
         setLoading(false);
         return;
       }
@@ -326,15 +344,70 @@ const handleNextRound = useCallback(async () => {
         for (const [name, apiRoute] of Object.entries(data.routes as Record<string, APIRoute>)) {
           routes[name] = convertAPIRouteToRoute(name, apiRoute, edges);
         }
-setSubmittedState({
-          playerChoice: data.player_choice,
-          playerPredictedTime: data.player_predicted_time || null,
-          playerRealizedTime: data.player_realized_time,
-          allSubmitted: data.all_submitted || false,
-          choiceDistribution: data.choice_distribution || {},
-          totalSubmitted: data.total_submitted || 0,
-          routes,
-          predictedTimes: data.predicted_times,
+setSubmittedState(prev => {
+          // First time — set everything including distribution
+if (!prev) {
+            if (data.all_submitted) {
+              setRevealedFinal(false);
+              setCountdown(30);
+              if (countdownRef.current) clearInterval(countdownRef.current);
+              countdownRef.current = setInterval(() => {
+                setCountdown(c => {
+                  if (c === null || c <= 1) {
+                    clearInterval(countdownRef.current!);
+                    countdownRef.current = null;
+                    setRevealedFinal(true);
+                    return null;
+                  }
+                  return c - 1;
+                });
+              }, 1000);
+            }
+            return {
+              playerChoice: data.player_choice,
+              // Show times immediately if already all submitted (user B case)
+              playerPredictedTime: data.all_submitted ? (data.player_predicted_time || null) : null,
+              playerRealizedTime: data.all_submitted ? (data.player_realized_time ?? null) : null,
+              allSubmitted: data.all_submitted || false,
+              choiceDistribution: data.choice_distribution || {},
+              totalSubmitted: data.total_submitted || 0,
+              routes,
+              predictedTimes: data.predicted_times,
+            };
+          }
+
+          // Once allSubmitted was true — completely frozen, no more updates
+          if (prev.allSubmitted) return prev;
+
+          // Not yet all submitted — update distribution and check if just became all submitted
+const justAllSubmitted = data.all_submitted && !prev.allSubmitted;
+
+          if (justAllSubmitted) {
+            // Start 10s countdown immediately when all players submit
+            setRevealedFinal(false);
+            setCountdown(30);
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            countdownRef.current = setInterval(() => {
+              setCountdown(c => {
+                if (c === null || c <= 1) {
+                  clearInterval(countdownRef.current!);
+                  countdownRef.current = null;
+                  setRevealedFinal(true);
+                  return null;
+                }
+                return c - 1;
+              });
+            }, 1000);
+          }
+
+          return {
+            ...prev,
+            allSubmitted: data.all_submitted || false,
+            choiceDistribution: data.choice_distribution || prev.choiceDistribution,
+            totalSubmitted: data.total_submitted || prev.totalSubmitted,
+            playerPredictedTime: justAllSubmitted ? (data.player_predicted_time || null) : null,
+            playerRealizedTime: justAllSubmitted ? (data.player_realized_time ?? null) : null,
+          };
         });
 setGameState((prev) => {
           if (!prev) {
@@ -353,6 +426,15 @@ setGameState((prev) => {
               phase: "submitted_waiting",
               roundEndpoints: [],
               roundStartTime: Date.now()
+            };
+          }
+          // Already in submitted_waiting — only update what actually changes
+          // Don't replace nodes/edges/routes to avoid re-render flash
+          if (prev.phase === "submitted_waiting") {
+            return {
+              ...prev,
+              selectedRoute: routes[data.player_choice] || prev.selectedRoute,
+              phase: "submitted_waiting",
             };
           }
           return {
@@ -417,6 +499,12 @@ setGameState((prev) => {
           };
         });
 setSubmittedState(null);
+        setCountdown(null);
+        setRevealedFinal(false);
+        setChoiceReason(null);
+        setChoiceReasonText("");
+        setReasonSaved(false);
+        if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
         // Update the last log entry with realized time from server, keeping nodes/edges/routeData
 if (data.logs && data.logs.length > 0) {
           const serverLastLog = data.logs[data.logs.length - 1];
@@ -440,7 +528,7 @@ if (data.logs && data.logs.length > 0) {
             return { ...prev, logs: updatedLogs };
           });
         }
-        roundStartTimeRef.current = Date.now();
+        // roundStartTimeRef.current = Date.now();
       }
     } catch (error) {
       console.error("Error fetching next round:", error);
@@ -457,7 +545,24 @@ if (data.logs && data.logs.length > 0) {
       return () => clearInterval(interval);
     }
   }, [initialSessionId, handleNextRound]);
-
+useEffect(() => {
+    if (revealedFinal && sessionId) {
+      fetch(`/api/get-state?session_id=${sessionId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === "submitted_waiting") {
+            setSubmittedState(prev => prev ? {
+              ...prev,
+              playerPredictedTime: data.player_predicted_time || prev.playerPredictedTime,
+              playerRealizedTime: data.player_realized_time ?? prev.playerRealizedTime,
+              choiceDistribution: data.choice_distribution || prev.choiceDistribution,
+              totalSubmitted: data.total_submitted || prev.totalSubmitted,
+            } : null);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [revealedFinal, sessionId]);
   const handleRestart = useCallback(async () => {
     setSessionId(null);
     await handleStartGame();
@@ -666,24 +771,47 @@ if (data.logs && data.logs.length > 0) {
 {/* Times display */}
                           {submittedState.allSubmitted ? (
                             <div className="grid grid-cols-2 gap-3">
-                              <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Clock className="h-4 w-4 text-blue-600" />
-                                  <span className="text-sm font-medium text-blue-600">Predicted Time</span>
-                                </div>
-                                <p className="text-2xl font-bold text-blue-700">
-                                  {submittedState.playerPredictedTime?.toFixed(1) ?? '—'} min
-                                </p>
-                              </div>
-                              <div className="p-4 rounded-lg bg-green-500/10 border border-green-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Clock className="h-4 w-4 text-green-600" />
-                                  <span className="text-sm font-medium text-green-600">Realized Time</span>
-                                </div>
-                                <p className="text-2xl font-bold text-green-700">
-                                  {submittedState.playerRealizedTime?.toFixed(1) ?? '—'} min
-                                </p>
-                              </div>
+                            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-600">Predicted Time</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-700">
+                  {submittedState.playerPredictedTime?.toFixed(1) ?? '—'} min
+                </p>
+                <p className="text-xs text-blue-500 mt-1">
+                  Estimated travel time if only you use this route, based on background traffic.
+                </p>
+              </div>
+  <div className="p-4 rounded-lg bg-green-500/10 border border-green-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-600">Realized Time</span>
+                </div>
+                <p className="text-2xl font-bold text-green-700">
+                  {submittedState.playerRealizedTime?.toFixed(1) ?? '—'} min
+                </p>
+                {submittedState.playerRealizedTime != null && submittedState.playerPredictedTime != null && (
+                  <p className={`text-xs font-medium mt-1 ${
+                    submittedState.playerRealizedTime > submittedState.playerPredictedTime
+                      ? 'text-red-500'
+                      : submittedState.playerRealizedTime < submittedState.playerPredictedTime
+                      ? 'text-green-600'
+                      : 'text-muted-foreground'
+                  }`}>
+                    {(() => {
+                      const diff = submittedState.playerRealizedTime - submittedState.playerPredictedTime;
+                      const min = Math.min(submittedState.playerRealizedTime, submittedState.playerPredictedTime);
+                      const pct = min > 0 ? Math.abs(diff / min) * 100 : 0;
+                      if (diff === 0) return 'Exactly as predicted';
+                      return `${diff > 0 ? '+' : ''}${pct.toFixed(1)}% vs predicted (${diff > 0 ? 'more' : 'less'} congestion than expected)`;
+                    })()}
+                  </p>
+                )}
+                <p className="text-xs text-green-500 mt-1">
+                  Actual travel time accounting for all players' route choices this round.
+                </p>
+              </div>
                             </div>
                           ) : (
                             <div className="p-4 rounded-lg bg-muted/50 border border-dashed">
@@ -692,6 +820,74 @@ if (data.logs && data.logs.length > 0) {
                                 <span className="text-sm text-muted-foreground">Waiting for all players to submit before showing times...</span>
                               </div>
                             </div>
+                          )}
+                          
+
+                         {/* Choice Reason */}
+                          {submittedState.allSubmitted && (
+                            !reasonSaved ? (
+                              <div className="p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
+                                <p className="text-sm font-medium mb-3">Why did you choose {submittedState.playerChoice}?</p>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {[
+                                    "Shortest path",
+                                    "Less congestion",
+                                    "Habit / familiar route",
+                                    "Random choice",
+                                    "Following others",
+                                  ].map(option => (
+                                    <button
+                                      key={option}
+                                      onClick={() => setChoiceReason(prev => prev === option ? null : option)}
+                                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                                        choiceReason === option
+                                          ? 'bg-primary text-primary-foreground border-primary'
+                                          : 'border-border hover:border-primary/50 hover:bg-primary/5'
+                                      }`}
+                                    >
+                                      {option}
+                                    </button>
+                                  ))}
+                                </div>
+                                <textarea
+                                  value={choiceReasonText}
+                                  onChange={e => setChoiceReasonText(e.target.value)}
+                                  placeholder="Add more detail (optional)..."
+                                  className="w-full text-sm rounded-lg border border-border bg-background px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                                  rows={2}
+                                />
+                                <Button
+                                  size="sm"
+                                  className="w-full mt-2"
+                                  disabled={!choiceReason}
+                                  onClick={async () => {
+                                    try {
+                                      await fetch("/api/save-reason", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                          session_id: sessionId,
+                                          round: gameState?.currentRound,
+                                          reason: choiceReason,
+                                          reason_text: choiceReasonText || null,
+                                        }),
+                                      });
+                                      setReasonSaved(true);
+                                    } catch (e) {
+                                      console.error("Failed to save reason", e);
+                                    }
+                                  }}
+                                >
+                                  Save Reason
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="p-3 rounded-lg bg-muted/50 border border-border flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">Reason saved:</span>
+                                <span className="text-sm font-medium">{choiceReason}</span>
+                                {choiceReasonText && <span className="text-xs text-muted-foreground">— {choiceReasonText}</span>}
+                              </div>
+                            )
                           )}
 
                           {/* Choice Distribution */}
@@ -741,90 +937,271 @@ if (data.logs && data.logs.length > 0) {
                             </div>
                           </div>
 
-                          {/* Change Choice Section */}
-                          <div className="p-4 rounded-lg border border-dashed">
+                         {/* Change Choice Section */}
+                          <div className={`p-4 rounded-lg border border-dashed ${revealedFinal ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div className="flex items-center gap-2 mb-3">
                               <RefreshCw className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">Change Your Choice</span>
                             </div>
                             <p className="text-sm text-muted-foreground mb-3">
-                              You can change your route selection before the admin advances to the next round.
+                              Select a different route then confirm your change.
                             </p>
-                            <div className="flex gap-2 flex-wrap">
-                              {Object.entries(submittedState.routes).map(([name]) => (
-                                <Button
-                                  key={name}
-                                  variant={name === submittedState.playerChoice ? "default" : "outline"}
-                                  size="sm"
-                                  disabled={changingChoice || name === submittedState.playerChoice}
-                                  onClick={() => handleChangeChoice(name)}
-                                  className={
-                                    name === 'Route A' ? 'border-blue-500 hover:bg-blue-500/10' :
-                                    name === 'Route B' ? 'border-violet-500 hover:bg-violet-500/10' : 
-                                    'border-orange-500 hover:bg-orange-500/10'
-                                  }
-                                >
-                                  {changingChoice && name !== submittedState.playerChoice && (
-                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                  )}
-                                  {name}
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-
-                                                    {/* Optimal Distribution */}
-                          <div className="p-4 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/30">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                                <span className="font-medium text-muted-foreground">Optimal Distribution</span>
-                              </div>
-                              <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/40">
-                                🚧 Coming soon
-                              </Badge>
-                            </div>
-
-                            <p className="text-xs text-muted-foreground mb-3 italic">
-                              This section will show the statistically optimal split of players across routes to minimize average travel time. We are working on it.
-                            </p>
-
-                            <div className="space-y-2 opacity-40 pointer-events-none select-none">
-                              {Object.keys(submittedState.routes).map((name) => {
-                                const fakeOptimal: Record<string, number> = {
-                                  "Route A": 40,
-                                  "Route B": 35,
-                                  "Route C": 25,
-                                };
-                                const pct = fakeOptimal[name] ?? 33;
+                            {changeChoiceError && (
+                              <p className="text-sm text-red-500 mb-3">{changeChoiceError}</p>
+                            )}
+                            <div className="flex flex-col gap-2 mb-3">
+                              {Object.entries(submittedState.routes).map(([name]) => {
+                                const isCurrent = name === submittedState.playerChoice;
+                                const isPending = name === pendingRoute;
+                                const predictedTime = submittedState.predictedTimes?.[name];
                                 return (
-                                  <div key={name} className="p-3 rounded-lg border border-border bg-background">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="font-medium text-sm">{name}</span>
-                                      <span className="text-xs text-muted-foreground">{pct}% of players</span>
-                                    </div>
-                                    <div className="w-full bg-muted rounded-full h-2">
-                                      <div
-                                        className={`h-2 rounded-full ${
-                                          name === "Route A" ? "bg-blue-400" :
-                                          name === "Route B" ? "bg-violet-400" : "bg-orange-400"
-                                        }`}
-                                        style={{ width: `${pct}%` }}
-                                      />
-                                    </div>
-                                  </div>
+                                  <button
+                                    key={name}
+                                    disabled={changingChoice || isCurrent}
+                                    onClick={() => setPendingRoute(isCurrent ? null : name)}
+                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-colors
+                                      ${isCurrent
+                                        ? name === 'Route A' ? 'bg-blue-500/20 border-blue-500 text-blue-700 cursor-default' :
+                                          name === 'Route B' ? 'bg-violet-500/20 border-violet-500 text-violet-700 cursor-default' :
+                                          'bg-orange-500/20 border-orange-500 text-orange-700 cursor-default'
+                                        : isPending
+                                        ? name === 'Route A' ? 'bg-blue-500 border-blue-500 text-white' :
+                                          name === 'Route B' ? 'bg-violet-500 border-violet-500 text-white' :
+                                          'bg-orange-500 border-orange-500 text-white'
+                                        : name === 'Route A' ? 'border-blue-300 hover:bg-blue-500/10 text-blue-700' :
+                                          name === 'Route B' ? 'border-violet-300 hover:bg-violet-500/10 text-violet-700' :
+                                          'border-orange-300 hover:bg-orange-500/10 text-orange-700'
+                                      }`}
+                                  >
+                                    <span>
+                                      {name}
+                                      {isCurrent && <span className="ml-2 text-xs font-normal opacity-75">your current choice</span>}
+                                      {isPending && <span className="ml-2 text-xs font-normal opacity-75">(selected)</span>}
+                                    </span>
+                                    {predictedTime != null && (
+                                      <span className="text-xs font-normal opacity-80">
+                                        ~{predictedTime.toFixed(1)} min predicted
+                                      </span>
+                                    )}
+                                  </button>
                                 );
                               })}
                             </div>
+                            {pendingRoute && (
+                              <Button
+                                size="sm"
+                                className="w-full"
+                                disabled={changingChoice}
+                                onClick={async () => {
+                                  await handleChangeChoice(pendingRoute);
+                                  setPendingRoute(null);
+                                }}
+                              >
+                                {changingChoice
+                                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Confirming...</>
+                                  : `Confirm Change to ${pendingRoute}`}
+                              </Button>
+                            )}
+                          </div>
+                          
+{/* Optimal Distribution */}
+                          <div className={`p-4 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/30 ${!countdown && !revealedFinal ? 'opacity-40 pointer-events-none' : ''}`}>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="flex items-center gap-2 flex-1">
+                                <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span className="font-medium text-muted-foreground">Wardrop Equilibrium</span>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground mb-3 italic">
+                              Optimal split computed via SLSQP — the distribution where no player can reduce their travel time by switching routes.
+                            </p>
+                            
+                            {(!countdown && !revealedFinal) ? (
+                              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-xs">Available once all players submit...</span>
+              </div>
+                            ) : (() => {
+                              const N = submittedState.totalSubmitted;
+                              const routeNames = Object.keys(submittedState.routes);
+                              const R = routeNames.length;
+
+                              // Collect all unique edges across all routes
+                              const allEdgeIds: string[] = [];
+                              const edgeMap: Record<string, { freeTime: number; capacity: number; baseFlow: number }> = {};
+
+                              for (const name of routeNames) {
+                                for (const e of submittedState.routes[name].edges) {
+                                  if (!edgeMap[e.id]) {
+                                    allEdgeIds.push(e.id);
+                                    edgeMap[e.id] = { freeTime: e.freeTime, capacity: e.capacity, baseFlow: e.baseFlow };
+                                  }
+                                }
+                              }
+
+                              const M = allEdgeIds.length;
+
+                              // Build incidence matrix A[m][r] = 1 if edge m belongs to route r
+                              const A: number[][] = allEdgeIds.map(eid =>
+                                routeNames.map(name =>
+                                  submittedState.routes[name].edges.some(e => e.id === eid) ? 1 : 0
+                                )
+                              );
+
+                              // BPR per edge
+                              const bpr = (freeTime: number, flow: number, capacity: number) =>
+                                freeTime * (1 + 0.15 * Math.pow(flow / capacity, 4));
+
+                              // BPR derivative T'(F)
+                              const bprPrime = (freeTime: number, flow: number, capacity: number) =>
+                                freeTime * 0.15 * 4 * Math.pow(flow, 3) / Math.pow(capacity, 4);
+
+                              // Edge flows: F = b + A*x
+                              const edgeFlows = (x: number[]): number[] =>
+                                allEdgeIds.map((eid, m) => {
+                                  const e = edgeMap[eid];
+                                  return e.baseFlow + A[m].reduce((s, a, r) => s + a * x[r], 0);
+                                });
+
+                              // Objective: J(x) = sum_e F_e * T_e(F_e)
+                              const objective = (x: number[]): number => {
+                                const F = edgeFlows(x);
+                                return allEdgeIds.reduce((sum, eid, m) => {
+                                  const e = edgeMap[eid];
+                                  return sum + F[m] * bpr(e.freeTime, F[m], e.capacity);
+                                }, 0);
+                              };
+
+                              // Gradient: dJ/dx_r = sum_{e in r} MSC_e(F_e)
+                              // MSC_e = T_e(F_e) + F_e * T'_e(F_e) = t0[1 + alpha*(1+beta)*(F/C)^beta]
+                              const gradient = (x: number[]): number[] => {
+                                const F = edgeFlows(x);
+                                return routeNames.map((_, r) =>
+                                  allEdgeIds.reduce((sum, eid, m) => {
+                                    if (A[m][r] === 0) return sum;
+                                    const e = edgeMap[eid];
+                                    const msc = e.freeTime * (1 + 0.15 * 5 * Math.pow(F[m] / e.capacity, 4));
+                                    return sum + msc;
+                                  }, 0)
+                                );
+                              };
+
+                              // Project onto simplex: sum(x) = N, x >= 0
+                              const projectSimplex = (v: number[]): number[] => {
+                                const sorted = [...v].sort((a, b) => b - a);
+                                let rho = 0;
+                                let cumSum = 0;
+                                for (let i = 0; i < sorted.length; i++) {
+                                  cumSum += sorted[i];
+                                  if (sorted[i] - (cumSum - N) / (i + 1) > 0) rho = i;
+                                }
+                                const theta = (sorted.slice(0, rho + 1).reduce((s, v) => s + v, 0) - N) / (rho + 1);
+                                return v.map(vi => Math.max(0, vi - theta));
+                              };
+
+                              // SLSQP via projected gradient with Armijo line search
+                              let x = routeNames.map(() => N / R);
+                              let lr = 1.0;
+
+                              for (let iter = 0; iter < 1000; iter++) {
+                                const grad = gradient(x);
+                                // Armijo line search
+                                let step = lr;
+                                const J0 = objective(x);
+                                const gradNormSq = grad.reduce((s, g) => s + g * g, 0);
+                                for (let ls = 0; ls < 20; ls++) {
+                                  const xNew = projectSimplex(x.map((xi, r) => xi - step * grad[r]));
+                                  if (objective(xNew) <= J0 - 0.5 * step * gradNormSq) break;
+                                  step *= 0.5;
+                                }
+                                const xNew = projectSimplex(x.map((xi, r) => xi - step * grad[r]));
+                                const maxChange = x.reduce((m, xi, r) => Math.max(m, Math.abs(xNew[r] - xi)), 0);
+                                x = xNew;
+                                if (maxChange < 1e-7) break;
+                              }
+
+                              // Integer rounding: floor then distribute remainder
+                              const floored = x.map(xi => Math.floor(xi));
+                              let remainder = N - floored.reduce((s, v) => s + v, 0);
+                              const fracs = x.map((xi, r) => ({ r, frac: xi - floored[r] }))
+                                .sort((a, b) => b.frac - a.frac);
+                              for (let i = 0; i < remainder; i++) floored[fracs[i].r]++;
+
+                              // Final travel times at optimal integer distribution
+                              const optFlows = edgeFlows(floored);
+                              const routeTimes = routeNames.map((_, r) =>
+                                allEdgeIds.reduce((sum, eid, m) => {
+                                  if (A[m][r] === 0) return sum;
+                                  const e = edgeMap[eid];
+                                  return sum + bpr(e.freeTime, optFlows[m], e.capacity);
+                                }, 0)
+                              );
+
+                              return (
+                                <div className="space-y-2">
+                                  {routeNames.map((name, r) => {
+                                    const optCount = floored[r];
+                                    const pct = N > 0 ? Math.round((optCount / N) * 100) : 0;
+                                    const actualCount = submittedState.choiceDistribution[name] || 0;
+                                    const diff = optCount - actualCount;
+
+                                    return (
+                                      <div key={name} className="p-3 rounded-lg border border-border bg-background">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="font-medium text-sm">{name}</span>
+                                          <div className="flex items-center gap-2">
+                                            {diff !== 0 && (
+                                              <span className={`text-xs font-medium ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                {diff > 0 ? `+${diff} under` : `${Math.abs(diff)} over`}
+                                              </span>
+                                            )}
+                                            <span className="text-xs text-muted-foreground">
+                                              {pct}% · ~{routeTimes[r].toFixed(1)} min
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="w-full bg-muted rounded-full h-2">
+                                          <div
+                                            className={`h-2 rounded-full ${
+                                              name === 'Route A' ? 'bg-blue-500' :
+                                              name === 'Route B' ? 'bg-violet-500' : 'bg-orange-500'
+                                            }`}
+                                            style={{ width: `${pct}%` }}
+                                          />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          Optimal: {optCount} players · Actual: {actualCount} players
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+
                           </div>
 
-{/* Waiting Message */}
+{/* Countdown / Final Results */}
+                          {countdown !== null && (
+                            <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-200 text-center">
+                              <p className="text-sm font-medium text-orange-600">
+                                You can still change your choice — results update in <span className="text-xl font-bold">{countdown}s</span>
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Waiting Message */}
                           {submittedState.allSubmitted ? (
                             <div className="flex items-center justify-center gap-2 text-green-600">
                               <Users className="h-4 w-4" />
-                              <span className="text-sm font-medium">All players have submitted — waiting for admin to advance the round.</span>
+                              <span className="text-sm font-medium">
+                                {revealedFinal
+                                  ? "Final results shown — waiting for admin to advance the round."
+                                  : "All players have submitted — results updating soon..."}
+                              </span>
                             </div>
                           ) : (
                             <div className="flex items-center justify-center gap-2 text-muted-foreground">

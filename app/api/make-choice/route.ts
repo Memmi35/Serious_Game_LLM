@@ -78,7 +78,7 @@ for (let i = 0; i < selectedRouteData.path.length - 1; i++) {
     (e) => (e.from === fromNode && e.to === toNode) ||
            (e.from === toNode && e.to === fromNode)
   );
-  if (edge) predictedTime += bprTime(edge.freeTime, edge.flow + 1, edge.capacity);
+if (edge) predictedTime += bprTime(edge.freeTime, edge.baseFlow + 1, edge.capacity);
 }
 predictedTime = Math.round(predictedTime * 100) / 100;
 

@@ -63,7 +63,7 @@ replacement = """  const fetchState = useCallback(async () => {
             gameOver: data.game_over,
           };
         });
-        roundStartTimeRef.current = Date.now();
+        //roundStartTimeRef.current = Date.now();
         return "initialized";
       }
     } catch (error) {
