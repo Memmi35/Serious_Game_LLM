@@ -15,7 +15,6 @@ interface TrafficGridProps {
   showControls?: boolean;
   title?: string;
   compact?: boolean;
-  currentRound?: number;
 }
 
 // Route colors matching the route selector
@@ -40,8 +39,6 @@ function getEdgeCongestionColor(edge: EdgeParams): string {
   return CONGESTION_COLORS.high;
 }
 
-import { SCENARIOS } from "@/lib/scenarios";
-
 export function TrafficGrid({
   nodes,
   edges,
@@ -52,7 +49,6 @@ export function TrafficGrid({
   hoveredRouteName,
   title,
   compact = false,
-  currentRound,
 }: TrafficGridProps) {
   const gridSize = compact ? 280 : 400;
   const padding = compact ? 30 : 50;
@@ -212,54 +208,6 @@ export function TrafficGrid({
           );
         })}
 
-        
-        {/* Blocked Edges */}
-        {(() => {
-          const scenario = currentRound ? SCENARIOS[currentRound - 1] : undefined;
-          const blocked = scenario?.blockedEdges || [];
-          const renderedBlocked = new Set<string>();
-          
-          return blocked.map(edgeId => {
-            const [from, to] = edgeId.split('->');
-            // Check if valid node exists
-            const fromPos = getNodePosition(from);
-            const toPos = getNodePosition(to);
-            if (!fromPos || !toPos || (fromPos.x === 0 && fromPos.y === 0)) return null;
-            
-            // Draw only once per pair (A->B and B->A is the same visually)
-            const key = [from, to].sort().join('-');
-            if (renderedBlocked.has(key)) return null;
-            renderedBlocked.add(key);
-            
-            return (
-              <g key={`blocked-${key}`}>
-                <line
-                  x1={fromPos.x}
-                  y1={fromPos.y}
-                  x2={toPos.x}
-                  y2={toPos.y}
-                  stroke="#ef4444"
-                  strokeWidth={compact ? 4 : 6}
-                  strokeLinecap="round"
-                  strokeDasharray="4 4"
-                  opacity={0.8}
-                />
-                <circle 
-                  cx={(fromPos.x + toPos.x) / 2} 
-                  cy={(fromPos.y + toPos.y) / 2} 
-                  r={compact ? 4 : 6} 
-                  fill="#ef4444" 
-                />
-                <path 
-                  d={`M ${(fromPos.x + toPos.x) / 2 - 3} ${(fromPos.y + toPos.y) / 2 - 3} L ${(fromPos.x + toPos.x) / 2 + 3} ${(fromPos.y + toPos.y) / 2 + 3} M ${(fromPos.x + toPos.x) / 2 + 3} ${(fromPos.y + toPos.y) / 2 - 3} L ${(fromPos.x + toPos.x) / 2 - 3} ${(fromPos.y + toPos.y) / 2 + 3}`} 
-                  stroke="white" 
-                  strokeWidth="1.5"
-                />
-              </g>
-            );
-          });
-        })()}
-        
         {/* Nodes */}
         {nodes.map((node) => {
           const pos = getNodePosition(node.id);

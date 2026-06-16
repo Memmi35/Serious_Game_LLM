@@ -41,36 +41,8 @@ export async function POST() {
     ]);
     const sessionId = sessionResult.rows[0].id;
 
-    // 2. Handle / clone isolated edges for this room instance
-    // Checking if baseline seed records exist
-    const edgeCheck = await client.query("SELECT id FROM traffic_edges LIMIT 1");
-    let edges;
-
-    if (edgeCheck.rows.length === 0) {
-      edges = generateEdges();
-      
-      // Batch insert baseline edges if table is completely empty
-      for (const edge of edges) {
-        await client.query(
-          `INSERT INTO traffic_edges (id, from_node, to_node, free_time, capacity, base_flow, current_flow, travel_time)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [edge.id, edge.from, edge.to, edge.freeTime, edge.capacity, edge.baseFlow, edge.flow, edge.travelTime]
-        );
-      }
-    } else {
-      // Load standard network configurations
-      const dbEdges = await client.query("SELECT * FROM traffic_edges");
-      edges = dbEdges.rows.map((e) => ({
-        id: e.id,
-        from: e.from_node,
-        to: e.to_node,
-        freeTime: Number(e.free_time),
-        capacity: Number(e.capacity),
-        baseFlow: Number(e.base_flow),
-        flow: Number(e.current_flow),
-        travelTime: Number(e.travel_time),
-      }));
-    }
+    // 2. Generate edges for the first round based on scenarios
+    const edges = generateEdges(1);
 
     // 3. Store the pre-calculated round endpoints linked via tracking session_id
     for (let i = 0; i < roundEndpoints.length; i++) {

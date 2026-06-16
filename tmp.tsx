@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrafficGrid } from "./traffic-grid";
 import { RouteSelector } from "./route-selector";
 import { GameLogs } from "./game-logs";
-import { SCENARIOS } from "@/lib/scenarios";
 import {
   type GameState,
   type Route,
@@ -664,26 +663,6 @@ useEffect(() => {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        {/* Scenario Info */}
-        <div className="mb-6">
-          <Card className="bg-secondary/30">
-            <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1">
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    {SCENARIOS[gameState.currentRound - 1]?.icon} Round {gameState.currentRound} — {SCENARIOS[gameState.currentRound - 1]?.name}
-                  </h2>
-                  <h3 className="font-medium text-md text-foreground/90 mt-1">
-                    {SCENARIOS[gameState.currentRound - 1]?.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    {SCENARIOS[gameState.currentRound - 1]?.description}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="simulation">Simulation</TabsTrigger>
@@ -747,7 +726,6 @@ useEffect(() => {
                     </CardHeader>
                     <CardContent className="flex justify-center">
                       <TrafficGrid
-                        currentRound={gameState.currentRound}
                         nodes={gameState.nodes}
                         edges={gameState.edges}
                         origin={gameState.origin}
@@ -1324,8 +1302,7 @@ useEffect(() => {
                     <CardContent>
                       <div className="flex flex-col md:flex-row items-center gap-6">
                         <TrafficGrid
-                        currentRound={gameState.currentRound}
-                        nodes={gameState.nodes}
+                          nodes={gameState.nodes}
                           edges={gameState.edges}
                           origin={gameState.origin}
                           destination={gameState.destination}

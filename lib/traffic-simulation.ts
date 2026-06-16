@@ -1,3 +1,4 @@
+import { SCENARIOS } from "./scenarios";
 // Traffic Simulation Types and Logic
 // Adapted from ManhattanTrafficSimulator Python backend
 // MODIFIED: To produce identical results to Python implementation
@@ -103,38 +104,7 @@ function generateSnakePath(): string[] {
 
 // Generate predefined endpoints for all rounds
 export function generateRoundEndpoints(): Array<[string, string]> {
-  const endpoints: Array<[string, string]> = [];
-  const gridPoints = generateSnakePath();
-  let availablePoints = gridPoints.filter((p) => p !== "0-0");
-  const pathPoints = ["0-0"];
-  let currentPoint = "0-0";
-
-  for (let i = 0; i < NUM_ROUNDS; i++) {
-    // Filter available points to ensure Manhattan distance is >= 4
-    let validNextPoints = availablePoints.filter((p) => {
-      const [x1, y1] = currentPoint.split("-").map(Number);
-      const [x2, y2] = p.split("-").map(Number);
-      return Math.abs(x1 - x2) + Math.abs(y1 - y2) >= 4;
-    });
-
-    // Fallback if no valid point exists (safety net)
-    if (validNextPoints.length === 0) {
-      validNextPoints = availablePoints;
-    }
-
-    const nextIndex = Math.floor(Math.random() * validNextPoints.length);
-    const nextPoint = validNextPoints[nextIndex];
-    
-    pathPoints.push(nextPoint);
-    availablePoints = availablePoints.filter((p) => p !== nextPoint);
-    currentPoint = nextPoint;
-  }
-
-  for (let i = 0; i < NUM_ROUNDS; i++) {
-    endpoints.push([pathPoints[i], pathPoints[i + 1]]);
-  }
-
-  return endpoints;
+  return SCENARIOS.map(s => [s.origin, s.destination]);
 }
 
 // Generate 5x5 Manhattan grid nodes
@@ -155,70 +125,66 @@ export function generateNodes(): Node[] {
 }
 
 // Generate edges for Manhattan grid (bidirectional)
-export function generateEdges(): EdgeParams[] {
+export function generateEdges(round: number = 1): EdgeParams[] {
   const edges: EdgeParams[] = [];
+  const scenario = SCENARIOS[round - 1] || SCENARIOS[0];
 
   for (let y = 0; y < GRID_SIZE; y++) {
     for (let x = 0; x < GRID_SIZE; x++) {
       const currentNode = `${x}-${y}`;
 
-      // Horizontal edge (to the right)
+      // Helper to add edge
+      const addEdge = (fromNode: string, toNode: string) => {
+        const edgeId = `${fromNode}->${toNode}`;
+        
+        // Exclude blocked edges
+        if (scenario.blockedEdges?.includes(edgeId)) return;
+
+        let freeTime = scenario.defaultFreeTime;
+        let capacity = scenario.defaultCapacity;
+        let baseFlow = scenario.defaultFlow;
+
+        // Bottleneck overrides
+        if (scenario.bottleneckEdge === edgeId) {
+          if (scenario.bottleneckCapacity) capacity = scenario.bottleneckCapacity;
+          if (scenario.bottleneckFreeTime) freeTime = scenario.bottleneckFreeTime;
+        }
+
+        // Fast corridor overrides
+        if (scenario.fastCorridor?.includes(edgeId)) {
+          if (scenario.fastCapacity) capacity = scenario.fastCapacity;
+          if (scenario.fastFreeTime) freeTime = scenario.fastFreeTime;
+        }
+
+        // Center congestion node overrides
+        if (scenario.centerNodes && scenario.centerFlow) {
+          if (scenario.centerNodes.includes(fromNode) || scenario.centerNodes.includes(toNode)) {
+             baseFlow = scenario.centerFlow;
+          }
+        }
+
+        edges.push({
+          id: `${fromNode}-${toNode}`, // keep standard ID format for UI compatibility if needed, or change to ->
+          from: fromNode,
+          to: toNode,
+          freeTime: Math.round(freeTime * 100) / 100,
+          capacity,
+          baseFlow,
+          flow: baseFlow,
+          travelTime: freeTime,
+        });
+      };
+
       if (x < GRID_SIZE - 1) {
         const rightNode = `${x + 1}-${y}`;
-        const freeTime = randomUniform(1.0, 2.0);
-        const capacity = randomInt(3, 6);
-        const baseFlow = randomInt(2, 5);
-
-        edges.push({
-          id: `${currentNode}-${rightNode}`,
-          from: currentNode,
-          to: rightNode,
-          freeTime: Math.round(freeTime * 100) / 100,
-          capacity,
-          baseFlow,
-          flow: baseFlow,
-          travelTime: freeTime,
-        });
-
-        edges.push({
-          id: `${rightNode}-${currentNode}`,
-          from: rightNode,
-          to: currentNode,
-          freeTime: Math.round(freeTime * 100) / 100,
-          capacity,
-          baseFlow,
-          flow: baseFlow,
-          travelTime: freeTime,
-        });
+        addEdge(currentNode, rightNode);
+        addEdge(rightNode, currentNode);
       }
 
-      // Vertical edge (downward)
       if (y < GRID_SIZE - 1) {
         const downNode = `${x}-${y + 1}`;
-        const freeTime = randomUniform(1.0, 2.0);
-        const capacity = randomInt(3, 6);
-        const baseFlow = randomInt(2, 5);
-        edges.push({
-          id: `${currentNode}-${downNode}`,
-          from: currentNode,
-          to: downNode,
-          freeTime: Math.round(freeTime * 100) / 100,
-          capacity,
-          baseFlow,
-          flow: baseFlow,
-          travelTime: freeTime,
-        });
-
-        edges.push({
-          id: `${downNode}-${currentNode}`,
-          from: downNode,
-          to: currentNode,
-          freeTime: Math.round(freeTime * 100) / 100,
-          capacity,
-          baseFlow,
-          flow: baseFlow,
-          travelTime: freeTime,
-        });
+        addEdge(currentNode, downNode);
+        addEdge(downNode, currentNode);
       }
     }
   }

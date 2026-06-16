@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { bprTime } from "@/lib/traffic-simulation";
+import { bprTime, generateEdges } from "@/lib/traffic-simulation";
 
 export async function POST(request: NextRequest) {
   const client = await pool.connect();
@@ -115,6 +115,30 @@ export async function POST(request: NextRequest) {
           SET current_round = $1, current_origin = $2, current_destination = $3
           WHERE id = $4
         `, [nextRound, nextEndpoint?.origin, nextEndpoint?.destination, room_id]);
+
+        // Regenerate edges for the new scenario
+        const newEdges = generateEdges(nextRound);
+        
+        // Clear old edges for room
+        await client.query(`DELETE FROM traffic_edges WHERE room_id = $1`, [room_id]);
+        
+        // Insert new round edges
+        for (const edge of newEdges) {
+          await client.query(`
+            INSERT INTO traffic_edges (id, room_id, from_node, to_node, free_time, capacity, base_flow, current_flow, travel_time)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          `, [
+            `${room_id}_${edge.id}`,
+            room_id,
+            edge.from,
+            edge.to,
+            edge.freeTime,
+            edge.capacity,
+            edge.baseFlow,
+            edge.flow,
+            bprTime(edge.freeTime, edge.baseFlow, edge.capacity),
+          ]);
+        }
 
         // Reset sessions for next round
         await client.query(`
