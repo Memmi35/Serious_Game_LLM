@@ -1188,12 +1188,45 @@ useEffect(() => {
 
                           </div>
 
-{/* Countdown / Final Results */}
+{/* Countdown - fixed top-left */}
                           {countdown !== null && (
-                            <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-200 text-center">
-                              <p className="text-sm font-medium text-orange-600">
-                                You can still change your choice — results update in <span className="text-xl font-bold">{countdown}s</span>
-                              </p>
+                            <div className="fixed top-4 left-4 z-50 flex flex-col items-center gap-2">
+                              {/* Circle timer */}
+                              <div className="relative w-28 h-28">
+                                <svg className="w-28 h-28 -rotate-90" viewBox="0 0 112 112">
+                                  <circle
+                                    cx="56" cy="56" r="48"
+                                    fill="none"
+                                    stroke="#fca5a5"
+                                    strokeWidth="7"
+                                  />
+                                  <circle
+                                    cx="56" cy="56" r="48"
+                                    fill="none"
+                                    stroke="#dc2626"
+                                    strokeWidth="7"
+                                    strokeLinecap="round"
+                                    strokeDasharray={`${2 * Math.PI * 48}`}
+                                    strokeDashoffset={`${2 * Math.PI * 48 * (1 - countdown / 15)}`}
+                                    className="transition-all duration-1000"
+                                  />
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-600 rounded-full shadow-xl">
+                                  <span className="text-white text-3xl font-black leading-none">{countdown}</span>
+                                  <span className="text-white text-xs font-medium opacity-90">seconds</span>
+                                </div>
+                              </div>
+                              {/* Info card below circle */}
+                              <div className="bg-red-600 text-white rounded-xl shadow-xl px-3 py-2 text-center max-w-[120px]">
+                                <p className="text-xs font-bold leading-tight">Change window</p>
+                                <p className="text-xs opacity-80 leading-tight mt-0.5">You Can Switch your route before time runs out</p>
+                                {submittedState?.playerChoice && (
+                                  <div className="mt-1.5 bg-red-700 rounded-lg px-2 py-1">
+                                    <p className="text-xs opacity-70">Current</p>
+                                    <p className="text-xs font-bold truncate">{submittedState.playerChoice}</p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
 
