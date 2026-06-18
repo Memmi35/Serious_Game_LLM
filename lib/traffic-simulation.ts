@@ -140,21 +140,31 @@ export function generateEdges(round: number = 1): EdgeParams[] {
         // Exclude blocked edges
         if (scenario.blockedEdges?.includes(edgeId)) return;
 
-        let freeTime = scenario.defaultFreeTime;
+        // Per-edge free-time override (e.g. round 1's jittered values) takes
+        // precedence over the scenario-wide default, but more specific
+        // overrides below (bottleneck, fast corridor) still take precedence
+        // over this in turn.
+        let freeTime = scenario.edgeFreeTimes?.[edgeId] ?? scenario.defaultFreeTime;
         let capacity = scenario.defaultCapacity;
         let baseFlow = scenario.defaultFlow;
 
-        // Bottleneck overrides
-        if (scenario.bottleneckEdge === edgeId) {
-          if (scenario.bottleneckCapacity) capacity = scenario.bottleneckCapacity;
-          if (scenario.bottleneckFreeTime) freeTime = scenario.bottleneckFreeTime;
-        }
+// Bottleneck overrides (check both direct and inverse direction)
+if (
+  scenario.bottleneckEdge === edgeId ||
+  scenario.bottleneckEdge === `${toNode}->${fromNode}`
+) {
+  if (scenario.bottleneckCapacity) capacity = scenario.bottleneckCapacity;
+  if (scenario.bottleneckFreeTime) freeTime = scenario.bottleneckFreeTime;
+}
 
-        // Fast corridor overrides
-        if (scenario.fastCorridor?.includes(edgeId)) {
-          if (scenario.fastCapacity) capacity = scenario.fastCapacity;
-          if (scenario.fastFreeTime) freeTime = scenario.fastFreeTime;
-        }
+// Fast corridor overrides (check both directions)
+if (
+  scenario.fastCorridor?.includes(edgeId) ||
+  scenario.fastCorridor?.includes(`${toNode}->${fromNode}`)
+) {
+  if (scenario.fastCapacity) capacity = scenario.fastCapacity;
+  if (scenario.fastFreeTime) freeTime = scenario.fastFreeTime;
+}
 
         // Center congestion node overrides
         if (scenario.centerNodes && scenario.centerFlow) {
@@ -338,7 +348,8 @@ function findAllPathsDFS(
 function computePathTotalFreeTime(path: string[], edges: EdgeParams[]): number {
   let totalFreeTime = 0;
   for (let i = 0; i < path.length - 1; i++) {
-    const edge = edges.find((e) => e.from === path[i] && e.to === path[i + 1]);
+    const edge = edges.find((e) => e.from === path[i] && e.to === path[i + 1])
+              ?? edges.find((e) => e.from === path[i + 1] && e.to === path[i]);
     if (edge) {
       totalFreeTime += edge.freeTime;
     }
@@ -357,6 +368,7 @@ export function computeRouteTime(routePath: string[], edges: EdgeParams[]): numb
   }
   return Math.round(totalTime * 100) / 100;
 }
+
 
 // Compute total flow of a route
 function computeRouteTotalFlow(routePath: string[], edges: EdgeParams[]): number {
@@ -447,7 +459,20 @@ function generateManualRoutes(origin: string, destination: string): string[][] {
 function isValidRoutePath(path: string[], origin: string, destination: string): boolean {
   return path.length > 0 && path[0] === origin && path[path.length - 1] === destination;
 }
-
+// Predicted travel time: BPR using each edge's scenario baseFlow + 1
+// hypothetical traveler. Deliberately uses baseFlow, NOT the mutable `flow`
+// field — flow can carry over congestion from a previously selected route
+// in an earlier round, which would make "predicted" silently drift upward
+// round after round instead of reflecting the scenario's true baseline.
+export function computePredictedRouteTime(routePath: string[], edges: EdgeParams[]): number {
+  let total = 0;
+  for (let i = 0; i < routePath.length - 1; i++) {
+    const edge = edges.find((e) => e.from === routePath[i] && e.to === routePath[i + 1])
+              ?? edges.find((e) => e.from === routePath[i + 1] && e.to === routePath[i]);
+    if (edge) total += bprTime(edge.freeTime, edge.baseFlow + 1, edge.capacity);
+  }
+  return Math.round(total * 100) / 100;
+}
 // Generate 3 candidate routes with minimal total free time
 // MODIFIED: Now finds ALL paths like Python's nx.all_simple_paths
 // Also exported as findRoutes for API routes
@@ -469,16 +494,7 @@ export function generateCandidateRoutes(
 // Sort paths by total travel time (minimal travel time = best route)
 const pathsWithTime = allPaths.map((path) => ({
   path,
-  travelTime: (() => {
-    // Use BPR with flow+1 so displayed time matches what gets saved as predicted_time
-    let total = 0;
-    for (let i = 0; i < path.length - 1; i++) {
-      const edge = edges.find((e) => e.from === path[i] && e.to === path[i + 1])
-                ?? edges.find((e) => e.from === path[i + 1] && e.to === path[i]);
-      if (edge) total += bprTime(edge.freeTime, edge.flow + 1, edge.capacity);
-    }
-    return Math.round(total * 100) / 100;
-  })(),
+  travelTime: computePredictedRouteTime(path, edges),
   freeTime: computePathTotalFreeTime(path, edges),
 }));
 
@@ -619,20 +635,27 @@ export function nextRound(state: GameState): GameState {
     };
   }
 
+  const nextRoundNumber = state.currentRound + 1;
+
   // Get next round endpoints
   const nextRoundIndex = state.currentRound;
   const newOrigin = state.roundEndpoints[nextRoundIndex][0];
   const newDestination = state.roundEndpoints[nextRoundIndex][1];
 
-  // Generate new candidate routes
-  const newRoutes = generateCandidateRoutes(state.edges, newOrigin, newDestination);
+  // Rebuild edges fresh from the new round's scenario (freeTime, capacity,
+  // baseFlow) rather than reusing the previous round's mutated edges, whose
+  // `flow` values reflect last round's chosen route, not this round's scenario.
+  const newEdges = generateEdges(nextRoundNumber);
+
+  const newRoutes = generateCandidateRoutes(newEdges, newOrigin, newDestination);
   const newPredictedTimes = initializePredictions(newRoutes);
 
   return {
     ...state,
-    currentRound: state.currentRound + 1,
+    currentRound: nextRoundNumber,
     origin: newOrigin,
     destination: newDestination,
+    edges: newEdges,
     routes: newRoutes,
     predictedTimes: newPredictedTimes,
     selectedRoute: null,

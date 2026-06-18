@@ -102,19 +102,17 @@ export function RouteSelector({
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-4 pt-0">
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">
-                      {route.totalTravelTime.toFixed(1)} min
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      Free: {route.totalFreeTime.toFixed(1)} min
-                    </span>
-                  </div>
+                <div className="flex items-center gap-1.5">
+                 <div className="flex items-center gap-1.5">
+  <Clock className="h-4 w-4 text-muted-foreground" />
+  <span className="font-medium">
+    {route.totalTravelTime.toFixed(1)} min
+  </span>
+  <span className="text-xs text-muted-foreground">
+    (predicted travel time )
+  </span>
+</div>
+                 
                   <div className="flex items-center gap-1.5">
                     {getCongestionIcon(route.congestionLevel)}
                   </div>

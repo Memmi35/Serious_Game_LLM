@@ -984,7 +984,7 @@ useEffect(() => {
                                     </span>
                                     {predictedTime != null && (
                                       <span className="text-xs font-normal opacity-80">
-                                        ~{predictedTime.toFixed(1)} min predicted
+                                        {predictedTime.toFixed(1)} min predicted
                                       </span>
                                     )}
                                   </button>
@@ -1163,7 +1163,7 @@ useEffect(() => {
                                               </span>
                                             )}
                                             <span className="text-xs text-muted-foreground">
-                                              {pct}% · ~{routeTimes[r].toFixed(1)} min
+                                              {pct}%   {routeTimes[r].toFixed(1)} min
                                             </span>
                                           </div>
                                         </div>

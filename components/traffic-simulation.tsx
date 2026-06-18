@@ -507,24 +507,28 @@ setSubmittedState(null);
         setReasonSaved(false);
         if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
         // Update the last log entry with realized time from server, keeping nodes/edges/routeData
+        // Update the last log entry with realized time from server, keeping nodes/edges/routeData
 if (data.logs && data.logs.length > 0) {
           const serverLastLog = data.logs[data.logs.length - 1];
           setGameState(prev => {
             if (!prev || prev.logs.length === 0) return prev;
             const updatedLogs = [...prev.logs];
             const lastIndex = updatedLogs.length - 1;
-            const finalRoute = prevRoutes[serverLastLog.chosen_route];
+            
+            // Only update the travel time in the existing routeData to prevent 
+            // overwriting it with the routes of the newly advanced round
+            const existingRouteData = updatedLogs[lastIndex].routeData;
+            
             updatedLogs[lastIndex] = {
               ...updatedLogs[lastIndex],
               chosenRoute: serverLastLog.chosen_route ?? updatedLogs[lastIndex].chosenRoute,
               selectedRoute: serverLastLog.chosen_route ?? updatedLogs[lastIndex].selectedRoute,
               realizedTime: serverLastLog.realized_time ?? updatedLogs[lastIndex].realizedTime,
               predictedTime: serverLastLog.predicted_time ?? updatedLogs[lastIndex].predictedTime,
-              routeData: finalRoute
-                ? { ...finalRoute, totalTravelTime: serverLastLog.predicted_time ?? updatedLogs[lastIndex].predictedTime }
+              routeData: existingRouteData
+                ? { ...existingRouteData, totalTravelTime: serverLastLog.predicted_time ?? updatedLogs[lastIndex].predictedTime }
                 : updatedLogs[lastIndex].routeData,
-              nodes: updatedLogs[lastIndex].nodes,
-              edges: updatedLogs[lastIndex].edges,
+              // nodes and edges are already preserved by the spread operator
             };
             return { ...prev, logs: updatedLogs };
           });

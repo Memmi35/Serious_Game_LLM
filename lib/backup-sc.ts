@@ -132,8 +132,8 @@ export const SCENARIOS: Scenario[] = [
     description: "A low-congestion network with free-flowing traffic. Users explore the system under normal conditions where shortest paths are generally optimal.",
     origin: "0-0",
     destination: "4-4",
-    defaultFlow: 15,
-    defaultCapacity: 35,
+    defaultFlow: 4,
+    defaultCapacity: 14,
     defaultFreeTime: 1.2,
     // Every edge randomized in [1.1, 1.3].
     edgeFreeTimes: generateRangedFreeTimes(1.1, 1.3),
@@ -146,11 +146,11 @@ export const SCENARIOS: Scenario[] = [
     description: "The central area becomes highly congested while peripheral routes remain relatively free. Users must balance distance against avoiding the crowded center.",
     origin: "4-4",
     destination: "1-1",
-    defaultFlow:  10,
-    defaultCapacity: 30,
+    defaultFlow: 3,
+    defaultCapacity: 12,
     defaultFreeTime: 1.2,
     centerNodes: CENTER_NODES,
-    centerFlow: 25,
+    centerFlow: 9,
     // Peripheral edges [1.1, 1.3]; edges touching the center 3x3 block [1.4, 1.5].
     edgeFreeTimes: generateTieredFreeTimes(CENTER_NODES, [1.1, 1.3], [1.4, 1.5]),
   },
@@ -162,21 +162,11 @@ export const SCENARIOS: Scenario[] = [
     description: "A key link becomes a severe bottleneck, creating hidden congestion on an otherwise attractive route. Users must learn to avoid overloaded shortcuts.",
     origin: "1-1",
     destination: "3-3",
-    defaultFlow: 15,
-    defaultCapacity: 28,
+    defaultFlow: 4,
+    defaultCapacity: 11,
     defaultFreeTime: 1.2,
-
-    bottleneckEdge: "2-3->3-3",
-    bottleneckCapacity: 20,   // restored from 10 -> 20: at cap=10, worst-case
-                              // 40-player load on this edge hit ratio 5.5
-                              // (BPR x138), which reads as broken rather than
-                              // "severe bottleneck". cap=20 keeps it the
-                              // clearly-worst option (split-case BPR x1.6,
-                              // ~60% slower than free flow) without blowing up
-                              // if players herd onto it.
-    bottleneckFreeTime: 1.9,
-
-    // You can keep or adjust the randomized times around the destination
+    // Edges touching the destination node are the bottleneck: [1.9, 2.0].
+    // All other (peripheral) edges are [1.1, 1.3].
     edgeFreeTimes: generateTieredFreeTimes(["3-3"], [1.1, 1.3], [1.9, 2.0]),
   },
   {
@@ -187,12 +177,8 @@ export const SCENARIOS: Scenario[] = [
     description: "Several important links are closed, forcing rerouting across the network. Users must adapt quickly to structural disruptions and find alternative paths.",
     origin: "3-3",
     destination: "0-0",
-    defaultFlow: 14,         // was 10: at flow=10/cap=25 the predicted-vs-free
-                              // gap was ~0.56% (imperceptible). 14/22 below
-                              // brings it to a felt ~3.2% gap in the split
-                              // case while keeping worst-case load (40
-                              // players on one edge) at a sane BPR x6.4.
-    defaultCapacity: 22,     // was 25
+    defaultFlow: 5,
+    defaultCapacity: 10,
     defaultFreeTime: 1.2,
     blockedEdges: [
       "1-1->2-1",
@@ -218,10 +204,10 @@ export const SCENARIOS: Scenario[] = [
     description: "A fast express corridor competes with regular congested routes. Users must decide between a high-capacity shortcut and potentially shorter but slower alternatives.",
     origin: "0-0",
     destination: "4-4",
-    defaultFlow: 14,          // was 10
-    defaultCapacity: 24,      // was 20
+    defaultFlow: 6,
+    defaultCapacity: 9,
     defaultFreeTime: 1.2,
-    fastCapacity: 50,
+    fastCapacity: 18,
     fastFreeTime: 0.7,
     fastCorridor: [
       "0-4->1-4",
