@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrafficGrid } from "./traffic-grid";
 import { RouteSelector } from "./route-selector";
 import { GameLogs } from "./game-logs";
+import { SCENARIOS } from "@/lib/scenarios";
 import {
   type GameState,
   type Route,
@@ -349,7 +350,7 @@ setSubmittedState(prev => {
 if (!prev) {
             if (data.all_submitted) {
               setRevealedFinal(false);
-              setCountdown(30);
+              setCountdown(60);
               if (countdownRef.current) clearInterval(countdownRef.current);
               countdownRef.current = setInterval(() => {
                 setCountdown(c => {
@@ -385,7 +386,7 @@ const justAllSubmitted = data.all_submitted && !prev.allSubmitted;
           if (justAllSubmitted) {
             // Start 10s countdown immediately when all players submit
             setRevealedFinal(false);
-            setCountdown(30);
+            setCountdown(60);
             if (countdownRef.current) clearInterval(countdownRef.current);
             countdownRef.current = setInterval(() => {
               setCountdown(c => {
@@ -506,24 +507,28 @@ setSubmittedState(null);
         setReasonSaved(false);
         if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
         // Update the last log entry with realized time from server, keeping nodes/edges/routeData
+        // Update the last log entry with realized time from server, keeping nodes/edges/routeData
 if (data.logs && data.logs.length > 0) {
           const serverLastLog = data.logs[data.logs.length - 1];
           setGameState(prev => {
             if (!prev || prev.logs.length === 0) return prev;
             const updatedLogs = [...prev.logs];
             const lastIndex = updatedLogs.length - 1;
-            const finalRoute = prevRoutes[serverLastLog.chosen_route];
+            
+            // Only update the travel time in the existing routeData to prevent 
+            // overwriting it with the routes of the newly advanced round
+            const existingRouteData = updatedLogs[lastIndex].routeData;
+            
             updatedLogs[lastIndex] = {
               ...updatedLogs[lastIndex],
               chosenRoute: serverLastLog.chosen_route ?? updatedLogs[lastIndex].chosenRoute,
               selectedRoute: serverLastLog.chosen_route ?? updatedLogs[lastIndex].selectedRoute,
               realizedTime: serverLastLog.realized_time ?? updatedLogs[lastIndex].realizedTime,
               predictedTime: serverLastLog.predicted_time ?? updatedLogs[lastIndex].predictedTime,
-              routeData: finalRoute
-                ? { ...finalRoute, totalTravelTime: serverLastLog.predicted_time ?? updatedLogs[lastIndex].predictedTime }
+              routeData: existingRouteData
+                ? { ...existingRouteData, totalTravelTime: serverLastLog.predicted_time ?? updatedLogs[lastIndex].predictedTime }
                 : updatedLogs[lastIndex].routeData,
-              nodes: updatedLogs[lastIndex].nodes,
-              edges: updatedLogs[lastIndex].edges,
+              // nodes and edges are already preserved by the spread operator
             };
             return { ...prev, logs: updatedLogs };
           });
@@ -662,7 +667,42 @@ useEffect(() => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+<main className="container mx-auto px-4 py-6">
+  {/* Scenario Info */}
+  <div className="mb-6">
+    <Card
+      key={gameState.currentRound}
+      className="relative overflow-hidden border-2 border-amber-400/50 bg-gradient-to-br from-amber-500/10 via-orange-400/10 to-background shadow-lg shadow-amber-500/20 animate-in fade-in slide-in-from-top-4 zoom-in-95 duration-500"
+    >
+      {/* glow accent */}
+      <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-400/30 blur-3xl" />
+      <div className="absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-orange-400/20 blur-3xl" />
+
+      <CardContent className="relative p-5 flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex-1">
+          <div className="flex flex-col">
+            <span className="inline-flex items-center gap-1 self-start rounded-full bg-amber-400/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2">
+              Round {gameState.currentRound}
+            </span>
+
+            <h2 className="text-2xl font-extrabold flex items-center gap-2">
+              <span className="text-3xl">{SCENARIOS[gameState.currentRound - 1]?.icon}</span>
+              {SCENARIOS[gameState.currentRound - 1]?.name}
+            </h2>
+
+            <h3 className="font-semibold text-lg text-foreground/90 mt-1">
+              {SCENARIOS[gameState.currentRound - 1]?.title}
+            </h3>
+
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              {SCENARIOS[gameState.currentRound - 1]?.description}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="simulation">Simulation</TabsTrigger>
@@ -726,6 +766,7 @@ useEffect(() => {
                     </CardHeader>
                     <CardContent className="flex justify-center">
                       <TrafficGrid
+                        currentRound={gameState.currentRound}
                         nodes={gameState.nodes}
                         edges={gameState.edges}
                         origin={gameState.origin}
@@ -984,7 +1025,7 @@ useEffect(() => {
                                     </span>
                                     {predictedTime != null && (
                                       <span className="text-xs font-normal opacity-80">
-                                        {predictedTime.toFixed(1)} min predicted
+                                        ~{predictedTime.toFixed(1)} min predicted
                                       </span>
                                     )}
                                   </button>
@@ -1163,7 +1204,7 @@ useEffect(() => {
                                               </span>
                                             )}
                                             <span className="text-xs text-muted-foreground">
-                                              {pct}%   {routeTimes[r].toFixed(1)} min
+                                              {pct}% · ~{routeTimes[r].toFixed(1)} min
                                             </span>
                                           </div>
                                         </div>
@@ -1302,7 +1343,8 @@ useEffect(() => {
                     <CardContent>
                       <div className="flex flex-col md:flex-row items-center gap-6">
                         <TrafficGrid
-                          nodes={gameState.nodes}
+                        currentRound={gameState.currentRound}
+                        nodes={gameState.nodes}
                           edges={gameState.edges}
                           origin={gameState.origin}
                           destination={gameState.destination}

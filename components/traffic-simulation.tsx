@@ -123,6 +123,7 @@ const [changingChoice, setChangingChoice] = useState(false);
   const [revealedFinal, setRevealedFinal] = useState(false);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const roundStartTimeRef = useRef<number>(Date.now());
+  const lastSeenRoundRef = useRef<number | null>(null);
   const gameStateRef = useRef<GameState | null>(null);
 
 useEffect(() => {
@@ -131,7 +132,7 @@ useEffect(() => {
 
 useEffect(() => {
   if (gameState?.phase === "selecting") {
-   // roundStartTimeRef.current = Date.now();
+   //roundStartTimeRef.current = Date.now();
   }
 }, [gameState?.phase]);
 
@@ -350,7 +351,7 @@ setSubmittedState(prev => {
 if (!prev) {
             if (data.all_submitted) {
               setRevealedFinal(false);
-              setCountdown(30);
+              setCountdown(60);
               if (countdownRef.current) clearInterval(countdownRef.current);
               countdownRef.current = setInterval(() => {
                 setCountdown(c => {
@@ -386,7 +387,7 @@ const justAllSubmitted = data.all_submitted && !prev.allSubmitted;
           if (justAllSubmitted) {
             // Start 10s countdown immediately when all players submit
             setRevealedFinal(false);
-            setCountdown(30);
+            setCountdown(60);
             if (countdownRef.current) clearInterval(countdownRef.current);
             countdownRef.current = setInterval(() => {
               setCountdown(c => {
@@ -499,7 +500,7 @@ setGameState((prev) => {
             gameOver: data.game_over,
           };
         });
-setSubmittedState(null);
+        setSubmittedState(null);
         setCountdown(null);
         setRevealedFinal(false);
         setChoiceReason(null);
@@ -533,7 +534,10 @@ if (data.logs && data.logs.length > 0) {
             return { ...prev, logs: updatedLogs };
           });
         }
-        // roundStartTimeRef.current = Date.now();
+         if (lastSeenRoundRef.current !== data.current_round) {
+    roundStartTimeRef.current = Date.now();
+    lastSeenRoundRef.current = data.current_round;
+  }
       }
     } catch (error) {
       console.error("Error fetching next round:", error);
@@ -667,27 +671,42 @@ useEffect(() => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Scenario Info */}
-        <div className="mb-6">
-          <Card className="bg-secondary/30">
-            <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1">
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    {SCENARIOS[gameState.currentRound - 1]?.icon} Round {gameState.currentRound} — {SCENARIOS[gameState.currentRound - 1]?.name}
-                  </h2>
-                  <h3 className="font-medium text-md text-foreground/90 mt-1">
-                    {SCENARIOS[gameState.currentRound - 1]?.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    {SCENARIOS[gameState.currentRound - 1]?.description}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+<main className="container mx-auto px-4 py-6">
+  {/* Scenario Info */}
+  <div className="mb-6">
+    <Card
+      key={gameState.currentRound}
+      className="relative overflow-hidden border-2 border-amber-400/50 bg-gradient-to-br from-amber-500/10 via-orange-400/10 to-background shadow-lg shadow-amber-500/20 animate-in fade-in slide-in-from-top-4 zoom-in-95 duration-500"
+    >
+      {/* glow accent */}
+      <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-400/30 blur-3xl" />
+      <div className="absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-orange-400/20 blur-3xl" />
+
+      <CardContent className="relative p-5 flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex-1">
+          <div className="flex flex-col">
+            <span className="inline-flex items-center gap-1 self-start rounded-full bg-amber-400/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2">
+              Round {gameState.currentRound}
+            </span>
+
+            <h2 className="text-2xl font-extrabold flex items-center gap-2">
+              <span className="text-3xl">{SCENARIOS[gameState.currentRound - 1]?.icon}</span>
+              {SCENARIOS[gameState.currentRound - 1]?.name}
+            </h2>
+
+            <h3 className="font-semibold text-lg text-foreground/90 mt-1">
+              {SCENARIOS[gameState.currentRound - 1]?.title}
+            </h3>
+
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              {SCENARIOS[gameState.currentRound - 1]?.description}
+            </p>
+          </div>
         </div>
+      </CardContent>
+    </Card>
+  </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="simulation">Simulation</TabsTrigger>
@@ -794,426 +813,434 @@ useEffect(() => {
                             </p>
                           </div>
 
-{/* Times display */}
-                          {submittedState.allSubmitted ? (
-                            <div className="grid grid-cols-2 gap-3">
-                            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-200">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-600">Predicted Time</span>
+{/* Step indicator */}
+<div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+  <span className={submittedState.allSubmitted ? "font-semibold text-primary" : ""}>① Distribution</span>
+  <span className="opacity-40">→</span>
+  <span className={submittedState.allSubmitted ? "font-semibold text-primary" : ""}>② Optimal Split</span>
+  <span className="opacity-40">→</span>
+  <span className={!revealedFinal && countdown ? "font-semibold text-primary" : ""}>③ Switch?</span>
+  <span className="opacity-40">→</span>
+  <span className={revealedFinal && !reasonSaved ? "font-semibold text-primary" : ""}>④ Reason</span>
+</div>
+
+{/* STEP 1 — Times + Choice Distribution */}
+{submittedState.allSubmitted ? (
+  <div className="grid grid-cols-2 gap-3">
+    <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-200">
+      <div className="flex items-center gap-2 mb-1">
+        <Clock className="h-4 w-4 text-blue-600" />
+        <span className="text-sm font-medium text-blue-600">Predicted Time</span>
+      </div>
+      <p className="text-2xl font-bold text-blue-700">
+        {submittedState.playerPredictedTime?.toFixed(1) ?? '—'} min
+      </p>
+      <p className="text-xs text-blue-500 mt-1">
+        Estimated travel time if only you use this route, based on background traffic.
+      </p>
+    </div>
+    <div className="p-4 rounded-lg bg-green-500/10 border border-green-200">
+      <div className="flex items-center gap-2 mb-1">
+        <Clock className="h-4 w-4 text-green-600" />
+        <span className="text-sm font-medium text-green-600">Realized Time</span>
+      </div>
+      <p className="text-2xl font-bold text-green-700">
+        {submittedState.playerRealizedTime?.toFixed(1) ?? '—'} min
+      </p>
+      {submittedState.playerRealizedTime != null && submittedState.playerPredictedTime != null && (
+        <p className={`text-xs font-medium mt-1 ${
+          submittedState.playerRealizedTime > submittedState.playerPredictedTime
+            ? 'text-red-500'
+            : submittedState.playerRealizedTime < submittedState.playerPredictedTime
+            ? 'text-green-600'
+            : 'text-muted-foreground'
+        }`}>
+          {(() => {
+            const diff = submittedState.playerRealizedTime - submittedState.playerPredictedTime;
+            const min = Math.min(submittedState.playerRealizedTime, submittedState.playerPredictedTime);
+            const pct = min > 0 ? Math.abs(diff / min) * 100 : 0;
+            if (diff === 0) return 'Exactly as predicted';
+            return `${diff > 0 ? '+' : ''}${pct.toFixed(1)}% vs predicted (${diff > 0 ? 'more' : 'less'} congestion than expected)`;
+          })()}
+        </p>
+      )}
+      <p className="text-xs text-green-500 mt-1">
+        Actual travel time accounting for all players' route choices this round.
+      </p>
+    </div>
+  </div>
+) : (
+  <div className="p-4 rounded-lg bg-muted/50 border border-dashed">
+    <div className="flex items-center gap-2">
+      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      <span className="text-sm text-muted-foreground">Waiting for all players to submit before showing times...</span>
+    </div>
+  </div>
+)}
+
+{/* Choice Distribution */}
+<div className="p-4 rounded-lg bg-muted/50">
+  <div className="flex items-center gap-2 mb-1">
+    <Badge className="bg-primary text-primary-foreground">1</Badge>
+    <Users className="h-4 w-4 text-muted-foreground" />
+    <span className="font-medium">Current Choice Distribution</span>
+    <Badge variant="outline" className="ml-auto">
+      {submittedState.totalSubmitted} players
+    </Badge>
+  </div>
+  <p className="text-xs text-muted-foreground mb-3">
+    This is how everyone chose to travel this round.
+  </p>
+  <div className="space-y-2">
+    {Object.entries(submittedState.routes).map(([name, route]) => {
+      const count = submittedState.choiceDistribution[name] || 0;
+      const percentage = submittedState.totalSubmitted > 0
+        ? Math.round((count / submittedState.totalSubmitted) * 100)
+        : 0;
+      const isSelected = name === submittedState.playerChoice;
+
+      return (
+        <div
+          key={name}
+          className={`p-3 rounded-lg border ${
+            isSelected ? 'border-primary bg-primary/5' : 'border-border'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className={`font-medium ${isSelected ? 'text-primary' : ''}`}>
+              {name} {isSelected && '(Your choice)'}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {count} player{count !== 1 ? 's' : ''} ({percentage}%)
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className={`h-2 rounded-full ${
+                name === 'Route A' ? 'bg-blue-500' :
+                name === 'Route B' ? 'bg-violet-500' : 'bg-orange-500'
+              }`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+{/* STEP 2 — Optimal Distribution */}
+<div className={`p-4 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/30 ${!countdown && !revealedFinal ? 'opacity-40 pointer-events-none' : ''}`}>
+  <div className="flex items-center gap-2 mb-1">
+    <Badge className="bg-primary text-primary-foreground">2</Badge>
+    <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+    <span className="font-medium text-muted-foreground">Optimal Split (Wardrop Equilibrium)</span>
+  </div>
+
+  <p className="text-xs text-muted-foreground mb-3 italic">
+    Now compare: this is the split where no one could improve their time by switching. See how your group's choices stack up against it.
+  </p>
+
+  {(!countdown && !revealedFinal) ? (
+    <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      <span className="text-xs">Available once all players submit...</span>
+    </div>
+  ) : (() => {
+    const N = submittedState.totalSubmitted;
+    const routeNames = Object.keys(submittedState.routes);
+    const R = routeNames.length;
+
+    const allEdgeIds: string[] = [];
+    const edgeMap: Record<string, { freeTime: number; capacity: number; baseFlow: number }> = {};
+
+    for (const name of routeNames) {
+      for (const e of submittedState.routes[name].edges) {
+        if (!edgeMap[e.id]) {
+          allEdgeIds.push(e.id);
+          edgeMap[e.id] = { freeTime: e.freeTime, capacity: e.capacity, baseFlow: e.baseFlow };
+        }
+      }
+    }
+
+    const A: number[][] = allEdgeIds.map(eid =>
+      routeNames.map(name =>
+        submittedState.routes[name].edges.some(e => e.id === eid) ? 1 : 0
+      )
+    );
+
+    const bpr = (freeTime: number, flow: number, capacity: number) =>
+      freeTime * (1 + 0.15 * Math.pow(flow / capacity, 4));
+
+    const edgeFlows = (x: number[]): number[] =>
+      allEdgeIds.map((eid, m) => {
+        const e = edgeMap[eid];
+        return e.baseFlow + A[m].reduce((s, a, r) => s + a * x[r], 0);
+      });
+
+    const objective = (x: number[]): number => {
+      const F = edgeFlows(x);
+      return allEdgeIds.reduce((sum, eid, m) => {
+        const e = edgeMap[eid];
+        return sum + F[m] * bpr(e.freeTime, F[m], e.capacity);
+      }, 0);
+    };
+
+    const gradient = (x: number[]): number[] => {
+      const F = edgeFlows(x);
+      return routeNames.map((_, r) =>
+        allEdgeIds.reduce((sum, eid, m) => {
+          if (A[m][r] === 0) return sum;
+          const e = edgeMap[eid];
+          const msc = e.freeTime * (1 + 0.15 * 5 * Math.pow(F[m] / e.capacity, 4));
+          return sum + msc;
+        }, 0)
+      );
+    };
+
+    const projectSimplex = (v: number[]): number[] => {
+      const sorted = [...v].sort((a, b) => b - a);
+      let rho = 0;
+      let cumSum = 0;
+      for (let i = 0; i < sorted.length; i++) {
+        cumSum += sorted[i];
+        if (sorted[i] - (cumSum - N) / (i + 1) > 0) rho = i;
+      }
+      const theta = (sorted.slice(0, rho + 1).reduce((s, v) => s + v, 0) - N) / (rho + 1);
+      return v.map(vi => Math.max(0, vi - theta));
+    };
+
+    let x = routeNames.map(() => N / R);
+    let lr = 1.0;
+
+    for (let iter = 0; iter < 1000; iter++) {
+      const grad = gradient(x);
+      let step = lr;
+      const J0 = objective(x);
+      const gradNormSq = grad.reduce((s, g) => s + g * g, 0);
+      for (let ls = 0; ls < 20; ls++) {
+        const xNew = projectSimplex(x.map((xi, r) => xi - step * grad[r]));
+        if (objective(xNew) <= J0 - 0.5 * step * gradNormSq) break;
+        step *= 0.5;
+      }
+      const xNew = projectSimplex(x.map((xi, r) => xi - step * grad[r]));
+      const maxChange = x.reduce((m, xi, r) => Math.max(m, Math.abs(xNew[r] - xi)), 0);
+      x = xNew;
+      if (maxChange < 1e-7) break;
+    }
+
+    const floored = x.map(xi => Math.floor(xi));
+    let remainder = N - floored.reduce((s, v) => s + v, 0);
+    const fracs = x.map((xi, r) => ({ r, frac: xi - floored[r] }))
+      .sort((a, b) => b.frac - a.frac);
+    for (let i = 0; i < remainder; i++) floored[fracs[i].r]++;
+
+    const optFlows = edgeFlows(floored);
+    const routeTimes = routeNames.map((_, r) =>
+      allEdgeIds.reduce((sum, eid, m) => {
+        if (A[m][r] === 0) return sum;
+        const e = edgeMap[eid];
+        return sum + bpr(e.freeTime, optFlows[m], e.capacity);
+      }, 0)
+    );
+
+    return (
+      <div className="space-y-2">
+        {routeNames.map((name, r) => {
+          const optCount = floored[r];
+          const pct = N > 0 ? Math.round((optCount / N) * 100) : 0;
+          const actualCount = submittedState.choiceDistribution[name] || 0;
+          const diff = optCount - actualCount;
+
+          return (
+            <div key={name} className="p-3 rounded-lg border border-border bg-background">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-sm">{name}</span>
+                <div className="flex items-center gap-2">
+                  {diff !== 0 && (
+                    <span className={`text-xs font-medium ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {diff > 0 ? `+${diff} under` : `${Math.abs(diff)} over`}
+                    </span>
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {pct}% · ~{routeTimes[r].toFixed(1)} min
+                  </span>
                 </div>
-                <p className="text-2xl font-bold text-blue-700">
-                  {submittedState.playerPredictedTime?.toFixed(1) ?? '—'} min
-                </p>
-                <p className="text-xs text-blue-500 mt-1">
-                  Estimated travel time if only you use this route, based on background traffic.
-                </p>
               </div>
-  <div className="p-4 rounded-lg bg-green-500/10 border border-green-200">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-600">Realized Time</span>
-                </div>
-                <p className="text-2xl font-bold text-green-700">
-                  {submittedState.playerRealizedTime?.toFixed(1) ?? '—'} min
-                </p>
-                {submittedState.playerRealizedTime != null && submittedState.playerPredictedTime != null && (
-                  <p className={`text-xs font-medium mt-1 ${
-                    submittedState.playerRealizedTime > submittedState.playerPredictedTime
-                      ? 'text-red-500'
-                      : submittedState.playerRealizedTime < submittedState.playerPredictedTime
-                      ? 'text-green-600'
-                      : 'text-muted-foreground'
-                  }`}>
-                    {(() => {
-                      const diff = submittedState.playerRealizedTime - submittedState.playerPredictedTime;
-                      const min = Math.min(submittedState.playerRealizedTime, submittedState.playerPredictedTime);
-                      const pct = min > 0 ? Math.abs(diff / min) * 100 : 0;
-                      if (diff === 0) return 'Exactly as predicted';
-                      return `${diff > 0 ? '+' : ''}${pct.toFixed(1)}% vs predicted (${diff > 0 ? 'more' : 'less'} congestion than expected)`;
-                    })()}
-                  </p>
-                )}
-                <p className="text-xs text-green-500 mt-1">
-                  Actual travel time accounting for all players' route choices this round.
-                </p>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full ${
+                    name === 'Route A' ? 'bg-blue-500' :
+                    name === 'Route B' ? 'bg-violet-500' : 'bg-orange-500'
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
               </div>
-                            </div>
-                          ) : (
-                            <div className="p-4 rounded-lg bg-muted/50 border border-dashed">
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">Waiting for all players to submit before showing times...</span>
-                              </div>
-                            </div>
-                          )}
-                          
+              <p className="text-xs text-muted-foreground mt-1">
+                Optimal: {optCount} players · Actual: {actualCount} players
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  })()}
+</div>
 
-                         {/* Choice Reason */}
-                          {submittedState.allSubmitted && (
-                            !reasonSaved ? (
-                              <div className="p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5">
-                                <p className="text-sm font-medium mb-3">Why did you choose {submittedState.playerChoice}?</p>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                  {[
-                                  "Shortest path",
-                                  "Less congestion",
-                                  "Habit / familiar route",
-                                  "Random choice",
-                                  "Following others",
-                                  "Other",
-                                ].map(option => (
-                                    <button
-                                      key={option}
-                                      onClick={() => setChoiceReason(prev => prev === option ? null : option)}
-                                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                                        choiceReason === option
-                                          ? 'bg-primary text-primary-foreground border-primary'
-                                          : 'border-border hover:border-primary/50 hover:bg-primary/5'
-                                      }`}
-                                    >
-                                      {option}
-                                    </button>
-                                  ))}
-                                </div>
-                                <textarea
-                                  value={choiceReasonText}
-                                  onChange={e => setChoiceReasonText(e.target.value)}
-                                  placeholder={choiceReason === "Other" ? "Please describe your reason..." : "Add more detail (optional)..."}
-                                  className="w-full text-sm rounded-lg border border-border bg-background px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary"
-                                  rows={2}
-                                />
-                                <Button
-                                  size="sm"
-                                  className="w-full mt-2"
-                                  disabled={
-                                    !choiceReason && !choiceReasonText.trim() ||
-                                    choiceReason === "Other" && !choiceReasonText.trim()
-                                  }
-                                  onClick={async () => {
-                                    try {
-                                      await fetch("/api/save-reason", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                          session_id: sessionId,
-                                          round: gameState?.currentRound,
-                                          reason: choiceReason,
-                                          reason_text: choiceReasonText || null,
-                                        }),
-                                      });
-                                      setReasonSaved(true);
-                                    } catch (e) {
-                                      console.error("Failed to save reason", e);
-                                    }
-                                  }}
-                                >
-                                  Save Reason
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="p-3 rounded-lg bg-muted/50 border border-border flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">Reason saved:</span>
-                                <span className="text-sm font-medium">{choiceReason}</span>
-                                {choiceReasonText && <span className="text-xs text-muted-foreground">— {choiceReasonText}</span>}
-                              </div>
-                            )
-                          )}
+{/* STEP 3 — Change Choice Section */}
+<div className={`p-4 rounded-lg border border-dashed ${revealedFinal ? 'opacity-50 pointer-events-none' : ''}`}>
+  <div className="flex items-center gap-2 mb-1">
+    <Badge className="bg-primary text-primary-foreground">3</Badge>
+    <RefreshCw className="h-4 w-4 text-muted-foreground" />
+    <span className="font-medium">Want to switch?</span>
+  </div>
+  <p className="text-sm text-muted-foreground mb-3">
+    Now that you've seen the distribution and the optimal split, you can change your route before time runs out.
+  </p>
+  {changeChoiceError && (
+    <p className="text-sm text-red-500 mb-3">{changeChoiceError}</p>
+  )}
+  <div className="flex flex-col gap-2 mb-3">
+    {Object.entries(submittedState.routes).map(([name]) => {
+      const isCurrent = name === submittedState.playerChoice;
+      const isPending = name === pendingRoute;
+      const predictedTime = submittedState.predictedTimes?.[name];
+      return (
+        <button
+          key={name}
+          disabled={changingChoice || isCurrent}
+          onClick={() => setPendingRoute(isCurrent ? null : name)}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-colors
+            ${isCurrent
+              ? name === 'Route A' ? 'bg-blue-500/20 border-blue-500 text-blue-700 cursor-default' :
+                name === 'Route B' ? 'bg-violet-500/20 border-violet-500 text-violet-700 cursor-default' :
+                'bg-orange-500/20 border-orange-500 text-orange-700 cursor-default'
+              : isPending
+              ? name === 'Route A' ? 'bg-blue-500 border-blue-500 text-white' :
+                name === 'Route B' ? 'bg-violet-500 border-violet-500 text-white' :
+                'bg-orange-500 border-orange-500 text-white'
+              : name === 'Route A' ? 'border-blue-300 hover:bg-blue-500/10 text-blue-700' :
+                name === 'Route B' ? 'border-violet-300 hover:bg-violet-500/10 text-violet-700' :
+                'border-orange-300 hover:bg-orange-500/10 text-orange-700'
+            }`}
+        >
+          <span>
+            {name}
+            {isCurrent && <span className="ml-2 text-xs font-normal opacity-75">your current choice</span>}
+            {isPending && <span className="ml-2 text-xs font-normal opacity-75">(selected)</span>}
+          </span>
+          {predictedTime != null && (
+            <span className="text-xs font-normal opacity-80">
+              ~{predictedTime.toFixed(1)} min predicted
+            </span>
+          )}
+        </button>
+      );
+    })}
+  </div>
+  {pendingRoute && (
+    <Button
+      size="sm"
+      className="w-full"
+      disabled={changingChoice}
+      onClick={async () => {
+        await handleChangeChoice(pendingRoute);
+        setPendingRoute(null);
+      }}
+    >
+      {changingChoice
+        ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Confirming...</>
+        : `Confirm Change to ${pendingRoute}`}
+    </Button>
+  )}
+</div>
+{/* STEP 4 — Choice Reason (open during countdown, locked once countdown ends) */}
+{countdown !== null && (
+  !reasonSaved ? (
+    <div className={`p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 ${revealedFinal ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className="flex items-center gap-2 mb-1">
+        <Badge className="bg-primary text-primary-foreground">4</Badge>
+        <span className="font-medium">Last step — why did you choose {submittedState.playerChoice}?</span>
+        {revealedFinal && (
+          <span className="ml-auto text-xs font-medium text-red-500">Time's up — locked</span>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        {revealedFinal
+          ? "The reason window has closed for this round."
+          : "Help us understand your reasoning — this won't affect your score. You have until the countdown ends."}
+      </p>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {[
+          "Shortest path",
+          "Less congestion",
+          "Random choice",
+          "Following others",
+          "Other",
+        ].map(option => (
+          <button
+            key={option}
+            disabled={revealedFinal}
+            onClick={() => setChoiceReason(prev => prev === option ? null : option)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              choiceReason === option
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border hover:border-primary/50 hover:bg-primary/5'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={choiceReasonText}
+        onChange={e => setChoiceReasonText(e.target.value)}
+        disabled={revealedFinal}
+        placeholder={choiceReason === "Other" ? "Please describe your reason..." : "Add more detail (optional)..."}
+        className="w-full text-sm rounded-lg border border-border bg-background px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+        rows={2}
+      />
+      <Button
+        size="sm"
+        className="w-full mt-2"
+        disabled={
+          revealedFinal ||
+          !choiceReason && !choiceReasonText.trim() ||
+          choiceReason === "Other" && !choiceReasonText.trim()
+        }
+        onClick={async () => {
+          try {
+            await fetch("/api/save-reason", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                session_id: sessionId,
+                round: gameState?.currentRound,
+                reason: choiceReason,
+                reason_text: choiceReasonText || null,
+              }),
+            });
+            setReasonSaved(true);
+          } catch (e) {
+            console.error("Failed to save reason", e);
+          }
+        }}
+      >
+        Save Reason
+      </Button>
+    </div>
+  ) : (
+    <div className="p-3 rounded-lg bg-muted/50 border border-border flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">Reason saved:</span>
+      <span className="text-sm font-medium">{choiceReason}</span>
+      {choiceReasonText && <span className="text-xs text-muted-foreground">— {choiceReasonText}</span>}
+    </div>
+  )
+)}
 
-                          {/* Choice Distribution */}
-                          <div className="p-4 rounded-lg bg-muted/50">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">Choice Distribution</span>
-                              <Badge variant="outline" className="ml-auto">
-                                {submittedState.totalSubmitted} players
-                              </Badge>
-                            </div>
-                            <div className="space-y-2">
-                              {Object.entries(submittedState.routes).map(([name, route]) => {
-                                const count = submittedState.choiceDistribution[name] || 0;
-                                const percentage = submittedState.totalSubmitted > 0 
-                                  ? Math.round((count / submittedState.totalSubmitted) * 100) 
-                                  : 0;
-                                const isSelected = name === submittedState.playerChoice;
-                                
-                                return (
-                                  <div 
-                                    key={name} 
-                                    className={`p-3 rounded-lg border ${
-                                      isSelected ? 'border-primary bg-primary/5' : 'border-border'
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className={`font-medium ${isSelected ? 'text-primary' : ''}`}>
-                                        {name} {isSelected && '(Your choice)'}
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">
-                                        {count} player{count !== 1 ? 's' : ''} ({percentage}%)
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-muted rounded-full h-2">
-                                      <div 
-                                        className={`h-2 rounded-full ${
-                                          name === 'Route A' ? 'bg-blue-500' :
-                                          name === 'Route B' ? 'bg-violet-500' : 'bg-orange-500'
-                                        }`}
-                                        style={{ width: `${percentage}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                         {/* Change Choice Section */}
-                          <div className={`p-4 rounded-lg border border-dashed ${revealedFinal ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">Change Your Choice</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Select a different route then confirm your change.
-                            </p>
-                            {changeChoiceError && (
-                              <p className="text-sm text-red-500 mb-3">{changeChoiceError}</p>
-                            )}
-                            <div className="flex flex-col gap-2 mb-3">
-                              {Object.entries(submittedState.routes).map(([name]) => {
-                                const isCurrent = name === submittedState.playerChoice;
-                                const isPending = name === pendingRoute;
-                                const predictedTime = submittedState.predictedTimes?.[name];
-                                return (
-                                  <button
-                                    key={name}
-                                    disabled={changingChoice || isCurrent}
-                                    onClick={() => setPendingRoute(isCurrent ? null : name)}
-                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-colors
-                                      ${isCurrent
-                                        ? name === 'Route A' ? 'bg-blue-500/20 border-blue-500 text-blue-700 cursor-default' :
-                                          name === 'Route B' ? 'bg-violet-500/20 border-violet-500 text-violet-700 cursor-default' :
-                                          'bg-orange-500/20 border-orange-500 text-orange-700 cursor-default'
-                                        : isPending
-                                        ? name === 'Route A' ? 'bg-blue-500 border-blue-500 text-white' :
-                                          name === 'Route B' ? 'bg-violet-500 border-violet-500 text-white' :
-                                          'bg-orange-500 border-orange-500 text-white'
-                                        : name === 'Route A' ? 'border-blue-300 hover:bg-blue-500/10 text-blue-700' :
-                                          name === 'Route B' ? 'border-violet-300 hover:bg-violet-500/10 text-violet-700' :
-                                          'border-orange-300 hover:bg-orange-500/10 text-orange-700'
-                                      }`}
-                                  >
-                                    <span>
-                                      {name}
-                                      {isCurrent && <span className="ml-2 text-xs font-normal opacity-75">your current choice</span>}
-                                      {isPending && <span className="ml-2 text-xs font-normal opacity-75">(selected)</span>}
-                                    </span>
-                                    {predictedTime != null && (
-                                      <span className="text-xs font-normal opacity-80">
-                                        ~{predictedTime.toFixed(1)} min predicted
-                                      </span>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            {pendingRoute && (
-                              <Button
-                                size="sm"
-                                className="w-full"
-                                disabled={changingChoice}
-                                onClick={async () => {
-                                  await handleChangeChoice(pendingRoute);
-                                  setPendingRoute(null);
-                                }}
-                              >
-                                {changingChoice
-                                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Confirming...</>
-                                  : `Confirm Change to ${pendingRoute}`}
-                              </Button>
-                            )}
-                          </div>
-                          
-{/* Optimal Distribution */}
-                          <div className={`p-4 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/30 ${!countdown && !revealedFinal ? 'opacity-40 pointer-events-none' : ''}`}>
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                                <span className="font-medium text-muted-foreground">Wardrop Equilibrium</span>
-                              </div>
-                            </div>
-
-                            <p className="text-xs text-muted-foreground mb-3 italic">
-                              Optimal split computed via SLSQP — the distribution where no player can reduce their travel time by switching routes.
-                            </p>
-                            
-                            {(!countdown && !revealedFinal) ? (
-                              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-xs">Available once all players submit...</span>
-              </div>
-                            ) : (() => {
-                              const N = submittedState.totalSubmitted;
-                              const routeNames = Object.keys(submittedState.routes);
-                              const R = routeNames.length;
-
-                              // Collect all unique edges across all routes
-                              const allEdgeIds: string[] = [];
-                              const edgeMap: Record<string, { freeTime: number; capacity: number; baseFlow: number }> = {};
-
-                              for (const name of routeNames) {
-                                for (const e of submittedState.routes[name].edges) {
-                                  if (!edgeMap[e.id]) {
-                                    allEdgeIds.push(e.id);
-                                    edgeMap[e.id] = { freeTime: e.freeTime, capacity: e.capacity, baseFlow: e.baseFlow };
-                                  }
-                                }
-                              }
-
-                              const M = allEdgeIds.length;
-
-                              // Build incidence matrix A[m][r] = 1 if edge m belongs to route r
-                              const A: number[][] = allEdgeIds.map(eid =>
-                                routeNames.map(name =>
-                                  submittedState.routes[name].edges.some(e => e.id === eid) ? 1 : 0
-                                )
-                              );
-
-                              // BPR per edge
-                              const bpr = (freeTime: number, flow: number, capacity: number) =>
-                                freeTime * (1 + 0.15 * Math.pow(flow / capacity, 4));
-
-                              // BPR derivative T'(F)
-                              const bprPrime = (freeTime: number, flow: number, capacity: number) =>
-                                freeTime * 0.15 * 4 * Math.pow(flow, 3) / Math.pow(capacity, 4);
-
-                              // Edge flows: F = b + A*x
-                              const edgeFlows = (x: number[]): number[] =>
-                                allEdgeIds.map((eid, m) => {
-                                  const e = edgeMap[eid];
-                                  return e.baseFlow + A[m].reduce((s, a, r) => s + a * x[r], 0);
-                                });
-
-                              // Objective: J(x) = sum_e F_e * T_e(F_e)
-                              const objective = (x: number[]): number => {
-                                const F = edgeFlows(x);
-                                return allEdgeIds.reduce((sum, eid, m) => {
-                                  const e = edgeMap[eid];
-                                  return sum + F[m] * bpr(e.freeTime, F[m], e.capacity);
-                                }, 0);
-                              };
-
-                              // Gradient: dJ/dx_r = sum_{e in r} MSC_e(F_e)
-                              // MSC_e = T_e(F_e) + F_e * T'_e(F_e) = t0[1 + alpha*(1+beta)*(F/C)^beta]
-                              const gradient = (x: number[]): number[] => {
-                                const F = edgeFlows(x);
-                                return routeNames.map((_, r) =>
-                                  allEdgeIds.reduce((sum, eid, m) => {
-                                    if (A[m][r] === 0) return sum;
-                                    const e = edgeMap[eid];
-                                    const msc = e.freeTime * (1 + 0.15 * 5 * Math.pow(F[m] / e.capacity, 4));
-                                    return sum + msc;
-                                  }, 0)
-                                );
-                              };
-
-                              // Project onto simplex: sum(x) = N, x >= 0
-                              const projectSimplex = (v: number[]): number[] => {
-                                const sorted = [...v].sort((a, b) => b - a);
-                                let rho = 0;
-                                let cumSum = 0;
-                                for (let i = 0; i < sorted.length; i++) {
-                                  cumSum += sorted[i];
-                                  if (sorted[i] - (cumSum - N) / (i + 1) > 0) rho = i;
-                                }
-                                const theta = (sorted.slice(0, rho + 1).reduce((s, v) => s + v, 0) - N) / (rho + 1);
-                                return v.map(vi => Math.max(0, vi - theta));
-                              };
-
-                              // SLSQP via projected gradient with Armijo line search
-                              let x = routeNames.map(() => N / R);
-                              let lr = 1.0;
-
-                              for (let iter = 0; iter < 1000; iter++) {
-                                const grad = gradient(x);
-                                // Armijo line search
-                                let step = lr;
-                                const J0 = objective(x);
-                                const gradNormSq = grad.reduce((s, g) => s + g * g, 0);
-                                for (let ls = 0; ls < 20; ls++) {
-                                  const xNew = projectSimplex(x.map((xi, r) => xi - step * grad[r]));
-                                  if (objective(xNew) <= J0 - 0.5 * step * gradNormSq) break;
-                                  step *= 0.5;
-                                }
-                                const xNew = projectSimplex(x.map((xi, r) => xi - step * grad[r]));
-                                const maxChange = x.reduce((m, xi, r) => Math.max(m, Math.abs(xNew[r] - xi)), 0);
-                                x = xNew;
-                                if (maxChange < 1e-7) break;
-                              }
-
-                              // Integer rounding: floor then distribute remainder
-                              const floored = x.map(xi => Math.floor(xi));
-                              let remainder = N - floored.reduce((s, v) => s + v, 0);
-                              const fracs = x.map((xi, r) => ({ r, frac: xi - floored[r] }))
-                                .sort((a, b) => b.frac - a.frac);
-                              for (let i = 0; i < remainder; i++) floored[fracs[i].r]++;
-
-                              // Final travel times at optimal integer distribution
-                              const optFlows = edgeFlows(floored);
-                              const routeTimes = routeNames.map((_, r) =>
-                                allEdgeIds.reduce((sum, eid, m) => {
-                                  if (A[m][r] === 0) return sum;
-                                  const e = edgeMap[eid];
-                                  return sum + bpr(e.freeTime, optFlows[m], e.capacity);
-                                }, 0)
-                              );
-
-                              return (
-                                <div className="space-y-2">
-                                  {routeNames.map((name, r) => {
-                                    const optCount = floored[r];
-                                    const pct = N > 0 ? Math.round((optCount / N) * 100) : 0;
-                                    const actualCount = submittedState.choiceDistribution[name] || 0;
-                                    const diff = optCount - actualCount;
-
-                                    return (
-                                      <div key={name} className="p-3 rounded-lg border border-border bg-background">
-                                        <div className="flex items-center justify-between mb-1">
-                                          <span className="font-medium text-sm">{name}</span>
-                                          <div className="flex items-center gap-2">
-                                            {diff !== 0 && (
-                                              <span className={`text-xs font-medium ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                                {diff > 0 ? `+${diff} under` : `${Math.abs(diff)} over`}
-                                              </span>
-                                            )}
-                                            <span className="text-xs text-muted-foreground">
-                                              {pct}% · ~{routeTimes[r].toFixed(1)} min
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <div className="w-full bg-muted rounded-full h-2">
-                                          <div
-                                            className={`h-2 rounded-full ${
-                                              name === 'Route A' ? 'bg-blue-500' :
-                                              name === 'Route B' ? 'bg-violet-500' : 'bg-orange-500'
-                                            }`}
-                                            style={{ width: `${pct}%` }}
-                                          />
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                          Optimal: {optCount} players · Actual: {actualCount} players
-                                        </p>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-
-                          </div>
-
+                         
 {/* Countdown - fixed top-left */}
                           {countdown !== null && (
                             <div className="fixed top-4 left-4 z-50 flex flex-col items-center gap-2">
