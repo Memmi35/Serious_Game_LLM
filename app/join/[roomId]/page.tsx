@@ -35,9 +35,14 @@ export default function JoinPage() {
     setLoading(false);
   };
 
-  if (sessionId) {
-    return <TrafficSimulation initialSessionId={sessionId} />;
-  }
+if (sessionId) {
+  return (
+    <TrafficSimulation
+      initialSessionId={sessionId}
+      roomId={String(roomId)}
+    />
+  );
+}
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">

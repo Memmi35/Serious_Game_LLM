@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert round log
-await pool.query(`
+    await pool.query(`
       INSERT INTO round_logs 
         (session_id, round, user_id, origin, destination, chosen_route, initial_choice, final_choice, decision_latency, predicted_time, realized_time, route_a_flow, route_b_flow, route_c_flow, route_path, route_edges, grid_size)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
@@ -117,6 +117,37 @@ await pool.query(`
       session.grid_size,
     ]);
 
+    // ── COMPLIANCE LOGGING ────────────────────────────────────────────────────
+    try {
+      const rec = await pool.query(
+        `SELECT recommended_route
+         FROM agent_recommendations
+         WHERE session_id = $1 AND round = $2`,
+        [sessionId, room.current_round]
+      )
+
+      const recommendedRoute = rec.rows[0]?.recommended_route ?? null
+
+      const compliance = recommendedRoute !== null
+        ? (chosenRoute === recommendedRoute)
+        : null
+
+      const agentCondition = room.agent_condition ?? 'baseline'
+
+      await pool.query(
+        `UPDATE round_logs
+         SET ai_recommended_route = $1,
+             ai_compliance        = $2,
+             agent_condition      = $3
+         WHERE session_id = $4 AND round = $5`,
+        [recommendedRoute, compliance, agentCondition, sessionId, room.current_round]
+      )
+    } catch (complianceErr) {
+      // never break submission because of compliance logging
+      console.error('Compliance logging error:', complianceErr)
+    }
+    // ── END COMPLIANCE LOGGING ────────────────────────────────────────────────
+
     // Mark session as submitted
     await pool.query(`
       UPDATE simulation_sessions 
@@ -129,8 +160,8 @@ await pool.query(`
       round_result: {
         round: room.current_round,
         chosen_route: chosenRoute,
-      initial_choice: chosenRoute,
-      final_choice: chosenRoute,
+        initial_choice: chosenRoute,
+        final_choice: chosenRoute,
         chosen_route_path: selectedRouteData.path,
         predicted_time: predictedTime,
         realized_time: null,

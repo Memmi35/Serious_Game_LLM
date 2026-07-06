@@ -9,6 +9,9 @@ import { TrafficGrid } from "./traffic-grid";
 import { RouteSelector } from "./route-selector";
 import { GameLogs } from "./game-logs";
 import { SCENARIOS } from "@/lib/scenarios";
+import { AgentChat } from '@/components/AgentChat'
+
+import { AgentRecommendation } from "@/components/AgentRecommendation";
 import {
   type GameState,
   type Route,
@@ -110,7 +113,14 @@ function convertAPIRouteToRoute(
     congestionLevel: avgRatio < 0.5 ? "low" : avgRatio < 0.8 ? "medium" : "high",
   };
 }
-export function TrafficSimulation({ initialSessionId = null }: { initialSessionId?: string | null }) {
+// AFTER
+export function TrafficSimulation({
+  initialSessionId = null,
+  roomId = null,
+}: {
+  initialSessionId?: string | null
+  roomId?: string | null
+}) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
   const [hoveredRouteName, setHoveredRouteName] = useState<string | null>(null);
@@ -189,7 +199,8 @@ const [submittedState, setSubmittedState] = useState<{
   }, []);
 const [choiceReason, setChoiceReason] = useState<string | null>(null);
   const [choiceReasonText, setChoiceReasonText] = useState("");
-  const [reasonSaved, setReasonSaved] = useState(false);
+const [reasonSaved, setReasonSaved] = useState(false);
+const [agentCondition, setAgentCondition] = useState('baseline') // ADD HERE
 
   const handleSelectRoute = useCallback(async (routeName: string) => {
     if (!gameState || !sessionId) return;
@@ -790,14 +801,28 @@ useEffect(() => {
                   {/* Route Selection or Result */}
                   <Card>
                     <CardContent className="pt-6">
-                      {gameState.phase === "selecting" ? (
-                        <RouteSelector
-                          routes={routesArray}
-                          onSelect={handleSelectRoute}
-                          onHover={setHoveredRouteName}
-                          hoveredRouteName={hoveredRouteName}
-                          disabled={loading}
-                        />
+                          {gameState.phase === "selecting" ? (
+                            <>
+                              <AgentRecommendation
+                                  sessionId={sessionId ?? ''}
+                                  roomId={roomId ?? ''}
+                                  round={gameState.currentRound}
+                                  onConditionResolved={setAgentCondition}
+                                />
+                                <AgentChat
+                                  sessionId={sessionId ?? ''}
+                                  roomId={roomId ?? ''}
+                                  round={gameState.currentRound}
+                                  condition={agentCondition}
+                                />
+                              <RouteSelector
+                                routes={routesArray}
+                                onSelect={handleSelectRoute}
+                                onHover={setHoveredRouteName}
+                                hoveredRouteName={hoveredRouteName}
+                                disabled={loading}
+                              />
+                            </>
                       ) : gameState.phase === "submitted_waiting" && submittedState ? (
                         <div className="space-y-4">
                           {/* Your Choice Section */}

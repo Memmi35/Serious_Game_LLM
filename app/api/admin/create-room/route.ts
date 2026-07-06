@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { generateEdges, generateRoundEndpoints, bprTime } from "@/lib/traffic-simulation";
 
-export async function POST() {
+export async function POST(request: Request) {
   const client = await pool.connect();
   try {
+    // read agent_condition from request body, default to 'baseline'
+    const body = await request.json().catch(() => ({}))
+    const agentCondition = body.agent_condition ?? 'baseline'
+
     const totalRounds = 5;
     const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
 
@@ -14,11 +18,11 @@ export async function POST() {
 
     await client.query("BEGIN");
 
-    // Create room
+    // Create room — now includes agent_condition
     await client.query(`
-      INSERT INTO game_rooms (id, status, current_round, total_rounds, current_origin, current_destination)
-      VALUES ($1, $2, $3, $4, $5, $6)
-    `, [roomId, "waiting", 1, totalRounds, origin, destination]);
+      INSERT INTO game_rooms (id, status, current_round, total_rounds, current_origin, current_destination, agent_condition)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [roomId, "waiting", 1, totalRounds, origin, destination, agentCondition]);
 
     // Insert round endpoints
     for (let i = 0; i < roundEndpoints.length; i++) {

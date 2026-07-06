@@ -62,6 +62,9 @@ export default function AdminPage() {
           <div className="text-center font-mono text-2xl mt-2 bg-muted p-2 rounded">
             Room Code: {roomId}
           </div>
+          <div className="text-center text-sm text-muted-foreground mt-1">
+  AI Condition: <span className="font-medium capitalize">{roomDetails.room.agent_condition ?? 'baseline'}</span>
+</div>
         </CardHeader>
         <CardContent className="space-y-6">
           <Tabs defaultValue="overview">
