@@ -1,75 +1,67 @@
-import { generateText } from 'ai'
-import { getRoomState, getPlayerHistory, submitRecommendation } from './tools'
-import { CENTRAL_SYSTEM_PROMPT } from './prompts'
+import { ollama } from './ollama'
+import { getRoomContext, getPlayerHistory } from './context'
+import { systemPromptFor, buildContextBlock, RECOMMENDATION_INSTRUCTION } from './prompts'
 import { getMockRecommendation } from './mock'
 import db from '@/lib/db'
 
-// ─── FLIP THIS TO false WHEN YOU GET SERVER ACCESS ────────────────────────────
-const USE_MOCK = true
-// ─────────────────────────────────────────────────────────────────────────────
+// Set AGENT_MODE=ollama in .env.local once the model server is reachable.
+const USE_MOCK = process.env.AGENT_MODE !== 'ollama'
 
 type Recommendation = {
   route: 'A' | 'B' | 'C'
   explanation: string
 }
 
+function parseRecommendation(raw: string): Recommendation | null {
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && ['A', 'B', 'C'].includes(parsed.route) && typeof parsed.explanation === 'string') {
+      return { route: parsed.route, explanation: parsed.explanation }
+    }
+  } catch {
+    // fall through to regex fallback below
+  }
+  const match = raw.match(/Route\s*([ABC])/i)
+  if (match) {
+    return { route: match[1].toUpperCase() as 'A' | 'B' | 'C', explanation: raw.slice(0, 300) }
+  }
+  return null
+}
+
 async function callModel(
   roomId: string,
   round: number,
   sessionId: string,
-  condition: string   // add this parameter
+  condition: string
 ): Promise<Recommendation> {
-
   if (USE_MOCK) {
-    await new Promise(r => setTimeout(r, 800))
-    return getMockRecommendation(sessionId, round, condition)  // pass condition
+    await new Promise((r) => setTimeout(r, 400))
+    return getMockRecommendation(sessionId, round, condition)
   }
 
-  // ── UNCOMMENT WHEN SERVER IS READY ────────────────────────────────────────
-  // import { ollama } from 'ollama-ai-provider'
-  // const model = ollama('llama3.1')
-  // ─────────────────────────────────────────────────────────────────────────
+  try {
+    const [roomCtx, history] = await Promise.all([
+      getRoomContext(roomId, round),
+      getPlayerHistory(sessionId),
+    ])
 
-  // @ts-expect-error: optional dependency used only when USE_MOCK is false
-  const { ollama } = await import('ollama-ai-provider')
+    const contextBlock = buildContextBlock(roomCtx, history, condition)
+    const raw = await ollama.chat(
+      [
+        { role: 'system', content: systemPromptFor(condition) },
+        { role: 'user', content: `${contextBlock}\n\n${RECOMMENDATION_INSTRUCTION}` },
+      ],
+      { json: true }
+    )
 
-  const result = await generateText({
-    model: ollama('llama3.1'),
-    system: CENTRAL_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `Room ${roomId}, Round ${round}, Session ${sessionId}. Please recommend a route.`,
-      },
-    ],
-    tools: {
-      getRoomState,
-      getPlayerHistory,
-      submitRecommendation,
-    },
-    // 'maxSteps' is not a valid option on the generateText call; remove it
-  })
-
-  // try to find the submitRecommendation tool call
-  const submission = result.steps
-    .flatMap(s => s.toolCalls ?? [])
-    .find(tc => tc.toolName === 'submitRecommendation')
-
-  if (!submission) {
-    // fallback: parse plain text if model did not use the tool
-    const text = result.text ?? ''
-    const routeMatch = text.match(/Route\s+([ABC])/i)
-    if (routeMatch) {
-      return {
-        route: routeMatch[1].toUpperCase() as 'A' | 'B' | 'C',
-        explanation: text.slice(0, 200),
-      }
-    }
-    throw new Error('Agent did not submit a recommendation')
+    const parsed = parseRecommendation(raw)
+    if (parsed) return parsed
+    throw new Error(`Model returned unusable response: ${raw.slice(0, 200)}`)
+  } catch (err) {
+    console.error('Ollama call failed, falling back to mock:', err)
+    const fallback = getMockRecommendation(sessionId, round, condition)
+    return { ...fallback, explanation: `${fallback.explanation} (offline fallback — model server unreachable)` }
   }
-
-  // typing for tool call can be dynamic; cast to any to access args
-  return (submission as any).args as Recommendation
 }
 
 export async function generateRecommendation({
@@ -81,9 +73,8 @@ export async function generateRecommendation({
   roomId: string
   round: number
   sessionId: string
-  condition: string   // add this
+  condition: string
 }): Promise<Recommendation> {
-
   // check cache first — never call the model twice for same session+round
   const cached = await db.query(
     `SELECT recommended_route, explanation

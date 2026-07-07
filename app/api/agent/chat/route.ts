@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { ollama } from '@/lib/agent/ollama'
+import { getRoomContext, getPlayerHistory } from '@/lib/agent/context'
+import { systemPromptFor, buildContextBlock, CHAT_INSTRUCTION } from '@/lib/agent/prompts'
 
-// ── TOGGLE THIS WHEN SERVER IS READY ─────────────────────────────────────────
-const USE_MOCK = true
-// ─────────────────────────────────────────────────────────────────────────────
+// Set AGENT_MODE=ollama in .env.local once the model server is reachable.
+const USE_MOCK = process.env.AGENT_MODE !== 'ollama'
 
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, roomId, round, message } = await req.json()
+    const { sessionId, roomId, round, message, history } = await req.json()
 
     if (!sessionId || !roomId || !message) {
       return NextResponse.json({ error: 'Missing params' }, { status: 400 })
@@ -36,26 +38,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reply })
     }
 
-    // ── REAL MODEL CALL (uncomment when server ready) ─────────────────────────
-    // const { generateText } = await import('ai')
-    // const { ollama } = await import('ollama-ai-provider')
-    // const { getRoomState, getPlayerHistory } = await import('@/lib/agent/tools')
-    // const { CENTRAL_SYSTEM_PROMPT } = await import('@/lib/agent/prompts')
-    //
-    // const result = await generateText({
-    //   model: ollama('llama3.1'),
-    //   system: CENTRAL_SYSTEM_PROMPT,
-    //   messages: [
-    //     ...history.map((m: any) => ({ role: m.role, content: m.content })),
-    //   ],
-    //   tools: { getRoomState, getPlayerHistory },
-    //   maxSteps: 4,
-    // })
-    // return NextResponse.json({ reply: result.text })
-    // ─────────────────────────────────────────────────────────────────────────
+    try {
+      const [roomCtx, playerHistory] = await Promise.all([
+        getRoomContext(roomId, round),
+        getPlayerHistory(sessionId),
+      ])
 
-    return NextResponse.json({ reply: 'Model not available yet.' })
+      const contextBlock = buildContextBlock(roomCtx, playerHistory, condition)
 
+      const priorMessages = Array.isArray(history)
+        ? history
+            .slice(-8)
+            .map((m: { role: string; content: string }) => ({
+              role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+              content: m.content,
+            }))
+        : []
+
+      const reply = await ollama.chat([
+        { role: 'system', content: `${systemPromptFor(condition)}\n\n${CHAT_INSTRUCTION}` },
+        { role: 'user', content: contextBlock },
+        ...priorMessages,
+        { role: 'user', content: message },
+      ])
+
+      return NextResponse.json({ reply: reply || 'The advisor had nothing to add.' })
+    } catch (modelErr) {
+      console.error('Ollama chat call failed:', modelErr)
+      return NextResponse.json({
+        reply: 'The advisor is temporarily unreachable — try again in a moment.',
+      })
+    }
   } catch (err) {
     console.error('Chat error:', err)
     return NextResponse.json({ error: 'Chat failed' }, { status: 500 })
