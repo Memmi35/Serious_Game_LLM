@@ -8,7 +8,7 @@ export function getMockRecommendation(
 
   const explanation =
     condition === 'central'
-      ? `I am the CENTRAL agent. I can see all players in the room. For round ${round}, I suggest Route ${route}.`
+      ? `I'm PersuLLM. For round ${round}, Route ${route} is the one that gets us closer to the optimal split — I really think you should take it. (mock mode)`
       : condition === 'personal'
       ? `I am your PERSONAL agent. I can see only your history. For round ${round}, I suggest Route ${route}.`
       : `No AI condition active.`

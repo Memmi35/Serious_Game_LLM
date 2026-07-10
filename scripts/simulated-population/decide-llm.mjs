@@ -144,3 +144,90 @@ export async function decideSwitchLLM(persona, routesData, currentChoice, predic
     return { route: currentChoice, reason: "[llm fallback] stuck with initial choice", switched: false };
   }
 }
+
+// --- Persuasion dialogue (condition != baseline, before the initial choice) ---
+//
+// Bounded exchange: PersuLLM opening pitch (via GET /api/agent/recommend) ->
+// agent's in-character reply (this file) -> PersuLLM rebuttal (via POST
+// /api/agent/chat) -> agent's final decision, now informed by the whole
+// transcript (this file). Orchestrated by run-population.mjs, since that's
+// where all the HTTP calls to the app already live; this file only owns the
+// two LLM calls that represent the simulated agent's side of the dialogue.
+
+function buildPersuadeeReplyPrompt(persuaderMessage) {
+  return `The traffic advisor just said: "${persuaderMessage}"
+
+You haven't made your final decision yet. Respond naturally and in character — a short, real reply (1-2 sentences) that either pushes back, asks a question, states a preference, or shows you're persuaded. Don't just repeat the advisor's numbers back at them.
+
+Respond with ONLY a JSON object, no other text: {"reply": "your 1-2 sentence response"}`;
+}
+
+// Returns { reply: string }. Falls back to a short generic reply on mock
+// mode or LLM failure — there's no rule-based equivalent for conversational
+// turns, same reasoning as decideSwitchLLM's fallback.
+export async function generatePersuadeeReply(persona, persuaderMessage) {
+  if (USE_MOCK) {
+    return { reply: "[mock LLM] Okay, I'll think about it." };
+  }
+
+  try {
+    const raw = await chat(
+      [
+        { role: "system", content: personaSystemPrompt(persona) },
+        { role: "user", content: buildPersuadeeReplyPrompt(persuaderMessage) },
+      ],
+      { json: true }
+    );
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.reply === "string" && parsed.reply.trim()) {
+      return { reply: parsed.reply.trim() };
+    }
+    throw new Error(`Unusable reply: ${raw.slice(0, 200)}`);
+  } catch (err) {
+    console.error(`[${persona.label}] Persuadee-reply Ollama call failed:`, err.message);
+    return { reply: "[llm fallback] Okay, noted." };
+  }
+}
+
+function buildFinalChoicePrompt(routesData, previousChoice, dialogueTranscript) {
+  const routesText = Object.entries(routesData)
+    .map(([name, r]) => `- ${name}: predicted ${r.predicted_time}s, path ${r.path.join(" -> ")}`)
+    .join("\n");
+
+  const historyText = previousChoice ? `You chose ${previousChoice} last round.` : "This is your first round.";
+
+  const dialogueText = dialogueTranscript.length
+    ? dialogueTranscript.map((turn) => `${turn.speaker === "advisor" ? "Advisor" : "You"}: ${turn.text}`).join("\n")
+    : "No advisor conversation this round.";
+
+  return `Routes this round:\n${routesText}\n\n${historyText}\n\nYour conversation with the traffic advisor this round:\n${dialogueText}\n\nNow make your final route choice for this round — you're not obligated to follow the advisor just because you talked to them.\n\n${ROUTE_CHOICE_INSTRUCTION}`;
+}
+
+// dialogueTranscript: [{ speaker: 'advisor'|'agent', text: string }, ...] in
+// order. Returns the same shape as decideRouteLLM.
+export async function decideFinalChoiceAfterPersuasion(persona, routesData, networkEdges, previousChoice, dialogueTranscript, rngFn = Math.random) {
+  const decisionLatency = Math.round(sampleDecisionLatency(persona, rngFn) * 100) / 100;
+
+  if (USE_MOCK) {
+    const ruleBased = decideRoute(persona, routesData, networkEdges, previousChoice, rngFn);
+    return { ...ruleBased, decisionLatency, reason: `[mock LLM] ${ruleBased.reason}` };
+  }
+
+  try {
+    const raw = await chat(
+      [
+        { role: "system", content: personaSystemPrompt(persona) },
+        { role: "user", content: buildFinalChoicePrompt(routesData, previousChoice, dialogueTranscript) },
+      ],
+      { json: true }
+    );
+
+    const parsed = parseChoice(raw, routesData);
+    if (parsed) return { ...parsed, decisionLatency };
+    throw new Error(`Unusable LLM response: ${raw.slice(0, 200)}`);
+  } catch (err) {
+    console.error(`[${persona.label}] Post-persuasion Ollama call failed, falling back to rule-based:`, err.message);
+    const ruleBased = decideRoute(persona, routesData, networkEdges, previousChoice, rngFn);
+    return { ...ruleBased, decisionLatency, reason: `[llm fallback] ${ruleBased.reason}` };
+  }
+}

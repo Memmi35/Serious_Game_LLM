@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import { PERSONAS } from "./personas.mjs";
 import { decideRoute } from "./decide.mjs";
-import { decideRouteLLM, decideSwitchLLM } from "./decide-llm.mjs";
+import { decideRouteLLM, decideSwitchLLM, generatePersuadeeReply, decideFinalChoiceAfterPersuasion } from "./decide-llm.mjs";
 import { USE_MOCK, warmUp } from "./ollama-client.mjs";
 import { findOptimalSplit, routeEdgeSetsFromState } from "./optimal-split.mjs";
 
@@ -167,26 +167,54 @@ async function main() {
       let decision;
       let advisorNote = "";
       if (engine === "llm") {
-        let advisorRecommendation = null;
         if (condition !== "baseline") {
+          // Persuasion dialogue: PersuLLM's opening pitch -> agent's reply ->
+          // PersuLLM's rebuttal -> agent's final decision, informed by the
+          // whole transcript. Bounded to one rebuttal, not open-ended.
+          const dialogue = [];
           const rec = await callApi(
             baseUrl,
             "GET",
             `/api/agent/recommend?sessionId=${session.sessionId}&roomId=${roomId}&round=${round}`
           );
+
           if (!rec.error && rec.route) {
-            advisorRecommendation = rec;
-            advisorNote = `  advisor suggested ${rec.route}`;
+            const openingMessage = `I'd suggest ${rec.route}. ${rec.explanation}`;
+            dialogue.push({ speaker: "advisor", text: openingMessage });
+
+            const agentReply = await generatePersuadeeReply(session.persona, openingMessage);
+            dialogue.push({ speaker: "agent", text: agentReply.reply });
+
+            const chatRes = await callApi(baseUrl, "POST", "/api/agent/chat", {
+              sessionId: session.sessionId,
+              roomId,
+              round,
+              message: agentReply.reply,
+              history: [{ role: "assistant", content: openingMessage }],
+            });
+            if (chatRes.reply) dialogue.push({ speaker: "advisor", text: chatRes.reply });
+
+            advisorNote = `  [persuasion: ${rec.route} proposed, ${dialogue.length} turns]`;
           }
+
+          decision = await decideFinalChoiceAfterPersuasion(
+            session.persona,
+            state.routes,
+            state.network.edges,
+            session.previousChoice,
+            dialogue,
+            Math.random
+          );
+        } else {
+          decision = await decideRouteLLM(
+            session.persona,
+            state.routes,
+            state.network.edges,
+            session.previousChoice,
+            null,
+            Math.random
+          );
         }
-        decision = await decideRouteLLM(
-          session.persona,
-          state.routes,
-          state.network.edges,
-          session.previousChoice,
-          advisorRecommendation,
-          Math.random
-        );
       } else {
         decision = decideRoute(
           session.persona,

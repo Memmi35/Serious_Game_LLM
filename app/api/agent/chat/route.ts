@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { ollama } from '@/lib/agent/ollama'
 import { getRoomContext, getPlayerHistory } from '@/lib/agent/context'
-import { systemPromptFor, buildContextBlock, CHAT_INSTRUCTION } from '@/lib/agent/prompts'
+import { systemPromptFor, buildContextBlock, chatInstructionFor } from '@/lib/agent/prompts'
 
 // Set AGENT_MODE=ollama in .env.local once the model server is reachable.
 const USE_MOCK = process.env.AGENT_MODE !== 'ollama'
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       // mock: always reply with condition identity
       const reply =
         condition === 'central'
-          ? `I am the CENTRAL agent. I can see all players in the room. You asked: "${message}"`
+          ? `I am PersuLLM, and I'd suggest a different route than that. (mock mode — you asked: "${message}")`
           : `I am your PERSONAL agent. I can see only your history. You asked: "${message}"`
 
       return NextResponse.json({ reply })
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         : []
 
       const reply = await ollama.chat([
-        { role: 'system', content: `${systemPromptFor(condition)}\n\n${CHAT_INSTRUCTION}` },
+        { role: 'system', content: `${systemPromptFor(condition)}\n\n${chatInstructionFor(condition)}` },
         { role: 'user', content: contextBlock },
         ...priorMessages,
         { role: 'user', content: message },

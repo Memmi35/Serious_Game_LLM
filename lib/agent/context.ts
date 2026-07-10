@@ -1,5 +1,6 @@
 import db from '@/lib/db'
 import { findRoutes } from '@/lib/traffic-simulation'
+import { routeEdgeSetsFromRoutes, findOptimalSplit } from '@/lib/optimal-split'
 
 export type RouteSummary = {
   name: string
@@ -13,6 +14,7 @@ export type RoomContext = {
   destination: string
   routes: RouteSummary[]
   distribution: { route: string; count: number }[]
+  optimalSplit: { route: string; count: number }[] | null
 }
 
 export type HistoryRow = {
@@ -64,11 +66,28 @@ export async function getRoomContext(roomId: string, round: number): Promise<Roo
     [roomId, round]
   )
 
+  // Optimal split depends only on population size + route/edge structure,
+  // not on what anyone has actually chosen — so it's computable regardless
+  // of submission state this round.
+  const sessionCountRes = await db.query(
+    `SELECT COUNT(*)::int as count FROM simulation_sessions WHERE room_id = $1`,
+    [roomId]
+  )
+  const playerCount = sessionCountRes.rows[0]?.count ?? 0
+
+  let optimalSplit: { route: string; count: number }[] | null = null
+  if (playerCount > 0 && routes['Route A'] && routes['Route B'] && routes['Route C']) {
+    const routeEdgeSets = routeEdgeSetsFromRoutes(routes)
+    const optimal = findOptimalSplit(routeEdgeSets, playerCount)
+    optimalSplit = Object.entries(optimal.counts).map(([route, count]) => ({ route, count }))
+  }
+
   return {
     origin: room.current_origin,
     destination: room.current_destination,
     routes: routeSummaries,
     distribution: distRes.rows.map((r) => ({ route: r.chosen_route, count: r.count })),
+    optimalSplit,
   }
 }
 
