@@ -75,3 +75,62 @@ export async function decideRouteLLM(persona, routesData, networkEdges, previous
     return { ...ruleBased, decisionLatency, reason: `[llm fallback] ${ruleBased.reason}` };
   }
 }
+
+const SWITCH_CHOICE_INSTRUCTION = `Respond with ONLY a JSON object, no other text, in this exact shape:
+{"route": "Route A" | "Route B" | "Route C", "reason": "1 short phrase for why you stuck or switched"}
+Use your own current route if you don't want to change.`;
+
+function buildSwitchPrompt(currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) {
+  const gapPct = predictedTime > 0 ? (((realizedTime - predictedTime) / predictedTime) * 100).toFixed(1) : "0.0";
+  const gapDirection = realizedTime >= predictedTime ? "slower" : "faster";
+
+  const distText = Object.entries(actualDistribution)
+    .map(([name, count]) => `${name}: ${count}`)
+    .join(", ");
+  const optimalText = Object.entries(optimalDistribution)
+    .map(([name, count]) => `${name}: ${count}`)
+    .join(", ");
+
+  return `Everyone has now submitted for this round. You chose ${currentChoice}.
+
+Your predicted travel time was ${predictedTime}s. Your realized travel time (based on everyone's actual choices) was ${realizedTime}s — that's ${Math.abs(gapPct)}% ${gapDirection} than you expected.
+
+Final choice distribution across all 30 players: ${distText}
+The system-optimal distribution (the split that would minimize everyone's total travel time) would have been: ${optimalText}
+
+You have one chance to switch to a different route before this round locks in. No one else's choice can change now — this is purely your own reassessment based on the numbers above.
+
+${SWITCH_CHOICE_INSTRUCTION}`;
+}
+
+// currentChoice: 'Route A'|'Route B'|'Route C' the agent already submitted.
+// predictedTime/realizedTime: this agent's own numbers for the route it chose.
+// actualDistribution/optimalDistribution: { "Route A": count, ... } objects.
+// Returns { route, reason, switched: boolean }. On mock mode or LLM failure,
+// defaults to sticking with currentChoice (a safe, clearly-tagged fallback —
+// there's no rule-based switch heuristic to fall back to, unlike the initial
+// choice which has decide.mjs).
+export async function decideSwitchLLM(persona, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution, rngFn = Math.random) {
+  const routesData = { "Route A": {}, "Route B": {}, "Route C": {} };
+
+  if (USE_MOCK) {
+    return { route: currentChoice, reason: "[mock LLM] stuck with initial choice", switched: false };
+  }
+
+  try {
+    const raw = await chat(
+      [
+        { role: "system", content: personaSystemPrompt(persona) },
+        { role: "user", content: buildSwitchPrompt(currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) },
+      ],
+      { json: true }
+    );
+
+    const parsed = parseChoice(raw, routesData);
+    if (parsed) return { ...parsed, switched: parsed.route !== currentChoice };
+    throw new Error(`Unusable LLM response: ${raw.slice(0, 200)}`);
+  } catch (err) {
+    console.error(`[${persona.label}] Switch-decision Ollama call failed, sticking with current choice:`, err.message);
+    return { route: currentChoice, reason: "[llm fallback] stuck with initial choice", switched: false };
+  }
+}

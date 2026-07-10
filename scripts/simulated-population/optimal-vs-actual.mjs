@@ -19,6 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
+import { systemCost, findOptimalSplit } from "./optimal-split.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -32,10 +33,6 @@ function readDatabaseUrl() {
     if (match) return match[1].trim();
   }
   throw new Error("DATABASE_URL not found in .env.local");
-}
-
-function bprTime(freeTime, flow, capacity) {
-  return freeTime * (1 + 0.15 * Math.pow(flow / capacity, 4));
 }
 
 // Rebuild {routeName -> {edges: [{key, from, to, freeTime, capacity, baseFlow}]}}
@@ -56,48 +53,6 @@ function buildRouteEdgeSets(roundRows) {
     byRoute[name] = edges;
   }
   return byRoute;
-}
-
-// Total system travel time for a given (a, b, c) split, using the union of
-// edges across all 3 routes (shared edges accumulate flow from every route
-// that uses them, matching how the real game computes it in room-action).
-function systemCost(routeEdgeSets, counts) {
-  const edgeFlow = new Map(); // key -> { freeTime, capacity, flow }
-  for (const name of ROUTE_NAMES) {
-    const edges = routeEdgeSets[name];
-    const n = counts[name];
-    for (const e of edges) {
-      const entry = edgeFlow.get(e.key) || { freeTime: e.freeTime, capacity: e.capacity, flow: e.baseFlow };
-      entry.flow += n;
-      edgeFlow.set(e.key, entry);
-    }
-  }
-  const travelTimeByKey = new Map();
-  for (const [key, e] of edgeFlow) {
-    travelTimeByKey.set(key, bprTime(e.freeTime, e.flow, e.capacity));
-  }
-
-  let total = 0;
-  for (const name of ROUTE_NAMES) {
-    const routeTime = routeEdgeSets[name].reduce((sum, e) => sum + travelTimeByKey.get(e.key), 0);
-    total += routeTime * counts[name];
-  }
-  return total;
-}
-
-function findOptimalSplit(routeEdgeSets, n) {
-  let best = null;
-  for (let a = 0; a <= n; a++) {
-    for (let b = 0; b <= n - a; b++) {
-      const c = n - a - b;
-      const counts = { "Route A": a, "Route B": b, "Route C": c };
-      const cost = systemCost(routeEdgeSets, counts);
-      if (!best || cost < best.cost) {
-        best = { counts, cost };
-      }
-    }
-  }
-  return best;
 }
 
 async function main() {

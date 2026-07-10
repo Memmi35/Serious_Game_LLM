@@ -12,6 +12,7 @@
 
 import { PERSONAS } from "./personas.mjs";
 import { decideRoute } from "./decide.mjs";
+import { systemCost, findOptimalSplit } from "./optimal-split.mjs";
 
 function parseArgs(argv) {
   const args = { baseUrl: "http://localhost:3000", round: null, repeat: 1 };
@@ -40,42 +41,7 @@ async function callApi(baseUrl, method, endpoint, body) {
   return res.json();
 }
 
-function bprTime(freeTime, flow, capacity) {
-  return freeTime * (1 + 0.15 * Math.pow(flow / capacity, 4));
-}
-
 const ROUTE_NAMES = ["Route A", "Route B", "Route C"];
-
-function systemCost(routeEdgeSets, counts) {
-  const edgeFlow = new Map();
-  for (const name of ROUTE_NAMES) {
-    for (const e of routeEdgeSets[name]) {
-      const entry = edgeFlow.get(e.key) || { freeTime: e.freeTime, capacity: e.capacity, flow: e.baseFlow };
-      entry.flow += counts[name];
-      edgeFlow.set(e.key, entry);
-    }
-  }
-  const timeByKey = new Map();
-  for (const [key, e] of edgeFlow) timeByKey.set(key, bprTime(e.freeTime, e.flow, e.capacity));
-  let total = 0;
-  for (const name of ROUTE_NAMES) {
-    total += counts[name] * routeEdgeSets[name].reduce((s, e) => s + timeByKey.get(e.key), 0);
-  }
-  return total;
-}
-
-function findOptimal(routeEdgeSets, n) {
-  let best = null;
-  for (let a = 0; a <= n; a++) {
-    for (let b = 0; b <= n - a; b++) {
-      const c = n - a - b;
-      const counts = { "Route A": a, "Route B": b, "Route C": c };
-      const cost = systemCost(routeEdgeSets, counts);
-      if (!best || cost < best.cost) best = { counts, cost };
-    }
-  }
-  return best;
-}
 
 async function playRound(baseUrl, round) {
   const createResult = await callApi(baseUrl, "POST", "/api/admin/create-room", { agent_condition: "baseline" });
@@ -134,7 +100,7 @@ async function playRound(baseUrl, round) {
   const n = sessions.length;
   const counts = { "Route A": routeCounts["Route A"] || 0, "Route B": routeCounts["Route B"] || 0, "Route C": routeCounts["Route C"] || 0 };
   const actualCost = systemCost(routeEdgeSets, counts);
-  const optimal = findOptimal(routeEdgeSets, n);
+  const optimal = findOptimalSplit(routeEdgeSets, n);
   const gapPct = ((actualCost - optimal.cost) / optimal.cost) * 100;
 
   return { roomId, counts, optimal, actualCost, n, shared };

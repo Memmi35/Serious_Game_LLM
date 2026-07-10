@@ -1,6 +1,9 @@
 const BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const MODEL = process.env.OLLAMA_MODEL || 'llama3.1'
-const TIMEOUT_MS = 30_000
+// Generous headroom for a busy/shared GPU or a cold model load (Ollama has
+// to load the model into memory on its first call, or after switching
+// OLLAMA_MODEL to a different advisor model between experiment runs).
+const TIMEOUT_MS = 90_000
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 

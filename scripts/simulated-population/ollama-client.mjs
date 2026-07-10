@@ -15,13 +15,16 @@
 
 const BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 const MODEL = process.env.AGENT_POPULATION_MODEL || "qwen2.5:3b";
-const TIMEOUT_MS = 30_000;
+// Steady-state calls are usually a couple seconds. This is generous headroom
+// for a busy/shared GPU, not the expected normal case — see warmUp() below,
+// which is what actually protects against slow cold-start model loads.
+const TIMEOUT_MS = 90_000;
 
 export const USE_MOCK = process.env.AGENT_MODE !== "ollama";
 
-export async function chat(messages, opts = {}) {
+async function chatRaw(messages, opts, timeoutMs) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(`${BASE_URL}/api/chat`, {
@@ -45,4 +48,20 @@ export async function chat(messages, opts = {}) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function chat(messages, opts = {}) {
+  return chatRaw(messages, opts, TIMEOUT_MS);
+}
+
+// Forces Ollama to load MODEL into GPU memory before the real experiment
+// starts, so agent 1's first decision isn't the one that eats the cold-load
+// latency (which can exceed even a generous per-call timeout on a shared/
+// busy GPU). Uses a long timeout since this is the one call expected to be
+// slow; every call after this should be fast because Ollama keeps the model
+// loaded for OLLAMA_KEEP_ALIVE (default 5m).
+export async function warmUp() {
+  const start = Date.now();
+  await chatRaw([{ role: "user", content: "Reply with just: ok" }], {}, 180_000);
+  return Date.now() - start;
 }

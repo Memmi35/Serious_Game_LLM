@@ -16,8 +16,9 @@ import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import { PERSONAS } from "./personas.mjs";
 import { decideRoute } from "./decide.mjs";
-import { decideRouteLLM } from "./decide-llm.mjs";
-import { USE_MOCK } from "./ollama-client.mjs";
+import { decideRouteLLM, decideSwitchLLM } from "./decide-llm.mjs";
+import { USE_MOCK, warmUp } from "./ollama-client.mjs";
+import { findOptimalSplit, routeEdgeSetsFromState } from "./optimal-split.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -136,6 +137,14 @@ async function main() {
   await callApi(baseUrl, "POST", "/api/admin/room-action", { room_id: roomId, action: "start" });
   console.log("Room started");
 
+  // 3b. Warm up the population model so agent 1 doesn't eat the cold-load
+  // latency (which can exceed a normal per-call timeout on a busy/shared GPU).
+  if (engine === "llm" && !USE_MOCK) {
+    console.log("Warming up population model (forcing it into GPU memory)...");
+    const warmMs = await warmUp();
+    console.log(`Model warm — took ${fmtElapsed(warmMs)}`);
+  }
+
   // 4. Round loop
   const experimentStart = Date.now();
   for (let round = 1; round <= totalRounds; round++) {
@@ -211,7 +220,52 @@ async function main() {
       routeCounts[decision.route] = (routeCounts[decision.route] || 0) + 1;
     }
 
-    console.log(`Round ${round} done in ${fmtElapsed(Date.now() - roundStart)} — distribution:`, routeCounts);
+    console.log(`Round ${round} initial choices done in ${fmtElapsed(Date.now() - roundStart)} — distribution:`, routeCounts);
+
+    // Phase B: reflection + switch window, mirroring the real human flow
+    // (see components/traffic-simulation.tsx's "submitted_waiting" phase) —
+    // each agent sees its own predicted-vs-realized time and the actual vs.
+    // optimal distribution, then gets one chance to switch. No advisor
+    // involved here by design, even in --condition=central/personal — this
+    // is pure self-reflection against the numbers, not persuasion.
+    if (engine === "llm") {
+      const switchPhaseStart = Date.now();
+      console.log(`--- Round ${round} reflection/switch phase ---`);
+      let switchCount = 0;
+
+      for (const session of sessions) {
+        const state = await callApi(baseUrl, "GET", `/api/get-state?session_id=${session.sessionId}`);
+        const routeEdgeSets = routeEdgeSetsFromState(state.routes, state.network.edges);
+        const optimal = findOptimalSplit(routeEdgeSets, sessions.length);
+
+        const switchDecision = await decideSwitchLLM(
+          session.persona,
+          state.player_choice,
+          state.player_predicted_time,
+          state.player_realized_time,
+          state.choice_distribution,
+          optimal.counts,
+          Math.random
+        );
+
+        if (switchDecision.switched) {
+          await callApi(baseUrl, "POST", "/api/change-choice", {
+            session_id: session.sessionId,
+            new_route: switchDecision.route,
+          });
+          switchCount += 1;
+          routeCounts[state.player_choice] = (routeCounts[state.player_choice] || 0) - 1;
+          routeCounts[switchDecision.route] = (routeCounts[switchDecision.route] || 0) + 1;
+          console.log(`  [switch] ${session.persona.name}: ${state.player_choice} -> ${switchDecision.route}  "${switchDecision.reason}"`);
+          session.previousChoice = switchDecision.route;
+        }
+      }
+
+      console.log(
+        `Round ${round} switch phase done in ${fmtElapsed(Date.now() - switchPhaseStart)} — ${switchCount}/${sessions.length} switched — final distribution:`,
+        routeCounts
+      );
+    }
 
     // Sanity check before advancing.
     const check = await callApi(
