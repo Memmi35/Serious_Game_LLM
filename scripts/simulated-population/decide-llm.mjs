@@ -80,9 +80,17 @@ const SWITCH_CHOICE_INSTRUCTION = `Respond with ONLY a JSON object, no other tex
 {"route": "Route A" | "Route B" | "Route C", "reason": "1 short phrase for why you stuck or switched"}
 Use your own current route if you don't want to change.`;
 
-function buildSwitchPrompt(currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) {
+function buildSwitchPrompt(routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) {
   const gapPct = predictedTime > 0 ? (((realizedTime - predictedTime) / predictedTime) * 100).toFixed(1) : "0.0";
   const gapDirection = realizedTime >= predictedTime ? "slower" : "faster";
+
+  // Re-state each route's own predicted time/path — without this, "17
+  // people should be on Route C" is a bare number with nothing to evaluate
+  // it against, and agents have no basis to actually consider switching to
+  // a route they know nothing concrete about.
+  const routesText = Object.entries(routesData)
+    .map(([name, r]) => `- ${name}: predicted ${r.predicted_time}s, path ${r.path.join(" -> ")}`)
+    .join("\n");
 
   const distText = Object.entries(actualDistribution)
     .map(([name, count]) => `${name}: ${count}`)
@@ -95,6 +103,9 @@ function buildSwitchPrompt(currentChoice, predictedTime, realizedTime, actualDis
 
 Your predicted travel time was ${predictedTime}s. Your realized travel time (based on everyone's actual choices) was ${realizedTime}s — that's ${Math.abs(gapPct)}% ${gapDirection} than you expected.
 
+Routes this round (same as before, for reference if you want to compare):
+${routesText}
+
 Final choice distribution across all 30 players: ${distText}
 The system-optimal distribution (the split that would minimize everyone's total travel time) would have been: ${optimalText}
 
@@ -103,6 +114,7 @@ You have one chance to switch to a different route before this round locks in. N
 ${SWITCH_CHOICE_INSTRUCTION}`;
 }
 
+// routesData: same shape as decideRouteLLM's — { "Route A": {path, predicted_time}, ... }.
 // currentChoice: 'Route A'|'Route B'|'Route C' the agent already submitted.
 // predictedTime/realizedTime: this agent's own numbers for the route it chose.
 // actualDistribution/optimalDistribution: { "Route A": count, ... } objects.
@@ -110,9 +122,7 @@ ${SWITCH_CHOICE_INSTRUCTION}`;
 // defaults to sticking with currentChoice (a safe, clearly-tagged fallback —
 // there's no rule-based switch heuristic to fall back to, unlike the initial
 // choice which has decide.mjs).
-export async function decideSwitchLLM(persona, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution, rngFn = Math.random) {
-  const routesData = { "Route A": {}, "Route B": {}, "Route C": {} };
-
+export async function decideSwitchLLM(persona, routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution, rngFn = Math.random) {
   if (USE_MOCK) {
     return { route: currentChoice, reason: "[mock LLM] stuck with initial choice", switched: false };
   }
@@ -121,7 +131,7 @@ export async function decideSwitchLLM(persona, currentChoice, predictedTime, rea
     const raw = await chat(
       [
         { role: "system", content: personaSystemPrompt(persona) },
-        { role: "user", content: buildSwitchPrompt(currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) },
+        { role: "user", content: buildSwitchPrompt(routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) },
       ],
       { json: true }
     );

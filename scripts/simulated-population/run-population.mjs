@@ -240,6 +240,7 @@ async function main() {
 
         const switchDecision = await decideSwitchLLM(
           session.persona,
+          state.routes,
           state.player_choice,
           state.player_predicted_time,
           state.player_realized_time,
