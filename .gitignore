@@ -19,3 +19,6 @@ __pycache__/
 .env
 .env.local
 .venv/
+
+# Generated experiment output (rerun the scripts to regenerate)
+data/
