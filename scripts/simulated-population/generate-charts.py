@@ -37,10 +37,10 @@ plt.rcParams.update({
 })
 
 
-def load(room_id, suffix):
-    path = REPO_ROOT / "data" / "simulated-population" / f"{room_id}-{suffix}.json"
+def load(room_id, suffix, data_dir):
+    path = data_dir / f"{room_id}-{suffix}.json"
     if not path.exists():
-        raise FileNotFoundError(f"{path} not found — run the corresponding .mjs script for this room first")
+        raise FileNotFoundError(f"{path} not found — run the corresponding .mjs script for this room first, pointed at this same directory")
     return json.loads(path.read_text())
 
 
@@ -142,8 +142,8 @@ def main():
     out_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else REPO_ROOT / "data" / "simulated-population"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    ova_data = load(room_id, "optimal-vs-actual")
-    analysis_data = load(room_id, "room-analysis")
+    ova_data = load(room_id, "optimal-vs-actual", out_dir)
+    analysis_data = load(room_id, "room-analysis", out_dir)
 
     chart_actual_vs_optimal(room_id, ova_data, out_dir)
     chart_route_distribution(room_id, analysis_data, out_dir)

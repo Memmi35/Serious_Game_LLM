@@ -1,0 +1,88 @@
+{
+  "room_id": "27WB",
+  "agent_condition": "baseline",
+  "total_rounds": 5,
+  "total_decisions": 150,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 26,
+      "Route B": 3,
+      "Route C": 1
+    },
+    "2": {
+      "Route A": 28,
+      "Route B": 2,
+      "Route C": 0
+    },
+    "3": {
+      "Route A": 26,
+      "Route B": 4,
+      "Route C": 0
+    },
+    "4": {
+      "Route A": 24,
+      "Route B": 6,
+      "Route C": 0
+    },
+    "5": {
+      "Route A": 7,
+      "Route B": 23,
+      "Route C": 0
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 12.469666666666672,
+      "min": 3.27,
+      "max": 40.19
+    },
+    "2": {
+      "mean": 13.045666666666667,
+      "min": 1.68,
+      "max": 50.66
+    },
+    "3": {
+      "mean": 14.673333333333334,
+      "min": 2.83,
+      "max": 54.48
+    },
+    "4": {
+      "mean": 12.879000000000001,
+      "min": 3.25,
+      "max": 32.32
+    },
+    "5": {
+      "mean": 13.947666666666667,
+      "min": 3.36,
+      "max": 38.11
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 150,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 14,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Trust AI advice and slight preference for the shortest route."
+      },
+      {
+        "round": 1,
+        "reason": "AI recommended route with slight improvement over previous paths."
+      },
+      {
+        "round": 2,
+        "reason": "AI advised Route A last round and I trust their recommendations."
+      },
+      {
+        "round": 2,
+        "reason": "AI recommendation trust and slightly faster time"
+      },
+      {
+        "round": 2,
+        "reason": "AI last round recommendation still valid and slightly faster"
+      }
+    ]
+  }
+}
