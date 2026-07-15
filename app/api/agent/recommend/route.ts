@@ -16,18 +16,19 @@ export async function GET(req: NextRequest) {
   }
 
 const room = await db.query(
-  `SELECT agent_condition FROM game_rooms WHERE id = $1`,
+  `SELECT agent_condition, persuader_model FROM game_rooms WHERE id = $1`,
   [roomId]
 )
 
   const condition = room.rows[0]?.agent_condition ?? 'baseline'
+  const persuaderModel = room.rows[0]?.persuader_model ?? undefined
 
   if (condition === 'baseline') {
     return NextResponse.json({ condition: 'baseline' })
   }
 
   try {
-    const rec = await generateRecommendation({ roomId, round, sessionId, condition })
+    const rec = await generateRecommendation({ roomId, round, sessionId, condition, persuaderModel })
     return NextResponse.json({ condition, ...rec })
   } catch (err) {
     console.error('Agent error:', err)

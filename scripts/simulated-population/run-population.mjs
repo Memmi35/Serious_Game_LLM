@@ -24,12 +24,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 function parseArgs(argv) {
-  const args = { baseUrl: "http://137.121.170.69:8901", condition: "baseline", engine: "rules" };
+  const args = { baseUrl: "http://137.121.170.69:8901", condition: "baseline", engine: "rules", persuaderModel: null, agents: null, rounds: null };
   for (const arg of argv) {
     const [key, value] = arg.replace(/^--/, "").split("=");
     if (key === "base-url" && value) args.baseUrl = value.replace(/\/$/, "");
     if (key === "condition" && value) args.condition = value;
     if (key === "engine" && value) args.engine = value; // "rules" (default) or "llm"
+    // Per-room advisor model override (game_rooms.persuader_model). Lets a
+    // sequential multi-model batch pass a different model per run without
+    // touching OLLAMA_MODEL or restarting the app server between runs.
+    // Falls back to the app's OLLAMA_MODEL env var when omitted.
+    if (key === "persuader-model" && value) args.persuaderModel = value;
+    // Smoke-test knobs: cap population size / round count so a wiring
+    // change can be sanity-checked in ~1-2 minutes instead of committing
+    // to a full ~90-minute run. Omit both for a real experiment.
+    if (key === "agents" && value) args.agents = parseInt(value, 10);
+    if (key === "rounds" && value) args.rounds = parseInt(value, 10);
   }
   if (!["rules", "llm"].includes(args.engine)) {
     throw new Error(`--engine must be "rules" or "llm", got "${args.engine}"`);
@@ -69,19 +79,20 @@ async function callApi(baseUrl, method, endpoint, body) {
 }
 
 async function main() {
-  const { baseUrl, condition, engine } = parseArgs(process.argv.slice(2));
+  const { baseUrl, condition, engine, persuaderModel, agents, rounds } = parseArgs(process.argv.slice(2));
   const dbUrl = readDatabaseUrl();
   const pool = new Pool({ connectionString: dbUrl });
+  const activePersonas = agents ? PERSONAS.slice(0, agents) : PERSONAS;
 
   console.log(`Target app: ${baseUrl}`);
   console.log(`Condition: ${condition}`);
-  console.log(`Agents: ${PERSONAS.length}`);
+  console.log(`Agents: ${activePersonas.length}${agents ? ` (capped from ${PERSONAS.length} for smoke test)` : ""}`);
   console.log(
     `Engine: ${engine}${
       engine === "llm"
         ? USE_MOCK
           ? " (AGENT_MODE!=ollama -> mock fallback, no model calls)"
-          : ` (population model: ${process.env.AGENT_POPULATION_MODEL || "qwen2.5:3b"}, advisor model: ${process.env.OLLAMA_MODEL || "llama3.1"})`
+          : ` (population model: ${process.env.AGENT_POPULATION_MODEL || "qwen2.5:3b"}, advisor model: ${persuaderModel || process.env.OLLAMA_MODEL || "llama3.1"})`
         : ""
     }`
   );
@@ -89,17 +100,18 @@ async function main() {
   // 1. Create room
   const createResult = await callApi(baseUrl, "POST", "/api/admin/create-room", {
     agent_condition: condition,
+    persuader_model: persuaderModel,
   });
   const roomId = createResult.room_id;
   console.log(`Created room ${roomId}`);
 
   const roomRow = await pool.query("SELECT total_rounds FROM game_rooms WHERE id = $1", [roomId]);
-  const totalRounds = roomRow.rows[0].total_rounds;
-  console.log(`Total rounds: ${totalRounds}`);
+  const totalRounds = rounds ? Math.min(rounds, roomRow.rows[0].total_rounds) : roomRow.rows[0].total_rounds;
+  console.log(`Total rounds: ${totalRounds}${rounds ? ` (capped from ${roomRow.rows[0].total_rounds} for smoke test)` : ""}`);
 
-  // 2. Join all 30 agents, persist persona metadata
+  // 2. Join all agents, persist persona metadata
   const sessions = [];
-  for (const persona of PERSONAS) {
+  for (const persona of activePersonas) {
     const joinResult = await callApi(baseUrl, "POST", "/api/join-room", {
       room_id: roomId,
       user_name: `${persona.label} [${persona.id}]`,
@@ -166,12 +178,12 @@ async function main() {
 
       let decision;
       let advisorNote = "";
+      let dialogue = [];
       if (engine === "llm") {
         if (condition !== "baseline") {
           // Persuasion dialogue: PersuLLM's opening pitch -> agent's reply ->
           // PersuLLM's rebuttal -> agent's final decision, informed by the
           // whole transcript. Bounded to one rebuttal, not open-ended.
-          const dialogue = [];
           const rec = await callApi(
             baseUrl,
             "GET",
@@ -236,6 +248,7 @@ async function main() {
         round,
         reason: decision.reason,
         reason_text: decision.reason,
+        persuasion_transcript: dialogue.length ? dialogue : null,
       });
 
       const agentElapsed = Date.now() - agentStart;

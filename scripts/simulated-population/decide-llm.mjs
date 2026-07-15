@@ -154,6 +154,25 @@ export async function decideSwitchLLM(persona, routesData, currentChoice, predic
 // where all the HTTP calls to the app already live; this file only owns the
 // two LLM calls that represent the simulated agent's side of the dialogue.
 
+// Mirrors parseChoice's JSON-first-then-regex-fallback pattern — without
+// this, any reply that isn't strict JSON (e.g. the model answered in plain
+// text) was silently discarded and replaced with the canned "[llm
+// fallback] Okay, noted." string, with no trace of what the model actually
+// said and no way to distinguish a real parse failure from a network error
+// in aggregate stats.
+function parseReply(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.reply === "string" && parsed.reply.trim()) {
+      return parsed.reply.trim();
+    }
+  } catch {
+    // fall through to regex fallback
+  }
+  const trimmed = raw.trim();
+  return trimmed ? trimmed.slice(0, 300) : null;
+}
+
 function buildPersuadeeReplyPrompt(persuaderMessage) {
   return `The traffic advisor just said: "${persuaderMessage}"
 
@@ -178,10 +197,8 @@ export async function generatePersuadeeReply(persona, persuaderMessage) {
       ],
       { json: true }
     );
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.reply === "string" && parsed.reply.trim()) {
-      return { reply: parsed.reply.trim() };
-    }
+    const reply = parseReply(raw);
+    if (reply) return { reply };
     throw new Error(`Unusable reply: ${raw.slice(0, 200)}`);
   } catch (err) {
     console.error(`[${persona.label}] Persuadee-reply Ollama call failed:`, err.message);

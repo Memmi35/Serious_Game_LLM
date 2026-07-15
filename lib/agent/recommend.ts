@@ -32,7 +32,8 @@ async function callModel(
   roomId: string,
   round: number,
   sessionId: string,
-  condition: string
+  condition: string,
+  persuaderModel?: string
 ): Promise<Recommendation> {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 400))
@@ -51,7 +52,7 @@ async function callModel(
         { role: 'system', content: systemPromptFor(condition) },
         { role: 'user', content: `${contextBlock}\n\n${RECOMMENDATION_INSTRUCTION}` },
       ],
-      { json: true }
+      { json: true, model: persuaderModel }
     )
 
     const parsed = parseRecommendation(raw)
@@ -69,11 +70,13 @@ export async function generateRecommendation({
   round,
   sessionId,
   condition,
+  persuaderModel,
 }: {
   roomId: string
   round: number
   sessionId: string
   condition: string
+  persuaderModel?: string
 }): Promise<Recommendation> {
   // check cache first — never call the model twice for same session+round
   const cached = await db.query(
@@ -90,7 +93,7 @@ export async function generateRecommendation({
     }
   }
 
-  const rec = await callModel(roomId, round, sessionId, condition)
+  const rec = await callModel(roomId, round, sessionId, condition, persuaderModel)
 
   await db.query(
     `INSERT INTO agent_recommendations

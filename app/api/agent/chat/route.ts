@@ -17,10 +17,11 @@ export async function POST(req: NextRequest) {
 
     // get condition from DB
     const room = await pool.query(
-      `SELECT agent_condition FROM game_rooms WHERE id = $1`,
+      `SELECT agent_condition, persuader_model FROM game_rooms WHERE id = $1`,
       [roomId]
     )
     const condition = room.rows[0]?.agent_condition ?? 'baseline'
+    const persuaderModel = room.rows[0]?.persuader_model ?? undefined
 
     if (condition === 'baseline') {
       return NextResponse.json({
@@ -55,12 +56,15 @@ export async function POST(req: NextRequest) {
             }))
         : []
 
-      const reply = await ollama.chat([
-        { role: 'system', content: `${systemPromptFor(condition)}\n\n${chatInstructionFor(condition)}` },
-        { role: 'user', content: contextBlock },
-        ...priorMessages,
-        { role: 'user', content: message },
-      ])
+      const reply = await ollama.chat(
+        [
+          { role: 'system', content: `${systemPromptFor(condition)}\n\n${chatInstructionFor(condition)}` },
+          { role: 'user', content: contextBlock },
+          ...priorMessages,
+          { role: 'user', content: message },
+        ],
+        { model: persuaderModel }
+      )
 
       return NextResponse.json({ reply: reply || 'The advisor had nothing to add.' })
     } catch (modelErr) {

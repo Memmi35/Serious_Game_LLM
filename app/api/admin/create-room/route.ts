@@ -8,6 +8,10 @@ export async function POST(request: Request) {
     // read agent_condition from request body, default to 'baseline'
     const body = await request.json().catch(() => ({}))
     const agentCondition = body.agent_condition ?? 'baseline'
+    // optional per-room advisor model override — falls back to OLLAMA_MODEL
+    // env var (lib/agent/ollama.ts) when not set, so existing callers are
+    // unaffected
+    const persuaderModel = body.persuader_model ?? null
 
     const totalRounds = 5;
     const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -18,11 +22,11 @@ export async function POST(request: Request) {
 
     await client.query("BEGIN");
 
-    // Create room — now includes agent_condition
+    // Create room — now includes agent_condition and persuader_model
     await client.query(`
-      INSERT INTO game_rooms (id, status, current_round, total_rounds, current_origin, current_destination, agent_condition)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [roomId, "waiting", 1, totalRounds, origin, destination, agentCondition]);
+      INSERT INTO game_rooms (id, status, current_round, total_rounds, current_origin, current_destination, agent_condition, persuader_model)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [roomId, "waiting", 1, totalRounds, origin, destination, agentCondition, persuaderModel]);
 
     // Insert round endpoints
     for (let i = 0; i < roundEndpoints.length; i++) {

@@ -22,6 +22,19 @@ const TIMEOUT_MS = 90_000;
 
 export const USE_MOCK = process.env.AGENT_MODE !== "ollama";
 
+// Mirrors lib/agent/ollama.ts's stripThink() — see that file for why. This
+// client currently only ever talks to the population model, which isn't a
+// reasoning model today, but keeping this here too means swapping in a
+// reasoning model for the population later doesn't silently reintroduce
+// the same parsing bug.
+function stripThink(text) {
+  if (!text) return text;
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<think>[\s\S]*$/i, "")
+    .trim();
+}
+
 async function chatRaw(messages, opts, timeoutMs) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -44,7 +57,7 @@ async function chatRaw(messages, opts, timeoutMs) {
     }
 
     const data = await res.json();
-    return data.message?.content ?? "";
+    return stripThink(data.message?.content ?? "");
   } finally {
     clearTimeout(timeout);
   }

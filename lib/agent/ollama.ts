@@ -7,7 +7,19 @@ const TIMEOUT_MS = 90_000
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 
-async function chat(messages: ChatMessage[], opts: { json?: boolean } = {}): Promise<string> {
+// Reasoning models (deepseek-r1 etc.) prefix their answer with a <think>...</think>
+// block. Downstream code JSON.parse()s this content directly, so an unstripped
+// think block either breaks parsing or lets a stray route letter inside the
+// reasoning get regex-matched instead of the model's actual answer.
+function stripThink(text: string): string {
+  if (!text) return text
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/i, '') // unclosed block (ran out of tokens mid-thought)
+    .trim()
+}
+
+async function chat(messages: ChatMessage[], opts: { json?: boolean; model?: string } = {}): Promise<string> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
@@ -16,7 +28,7 @@ async function chat(messages: ChatMessage[], opts: { json?: boolean } = {}): Pro
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODEL,
+        model: opts.model || MODEL,
         messages,
         stream: false,
         ...(opts.json ? { format: 'json' } : {}),
@@ -29,7 +41,7 @@ async function chat(messages: ChatMessage[], opts: { json?: boolean } = {}): Pro
     }
 
     const data = await res.json()
-    return data.message?.content ?? ''
+    return stripThink(data.message?.content ?? '')
   } finally {
     clearTimeout(timeout)
   }
