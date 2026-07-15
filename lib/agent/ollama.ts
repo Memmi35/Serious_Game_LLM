@@ -1,5 +1,12 @@
 const BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const MODEL = process.env.OLLAMA_MODEL || 'llama3.1'
+// Ollama defaults to each model's max supported context window when none is
+// requested (e.g. deepseek-r1:32b defaults to 131072, ballooning its VRAM
+// footprint to ~54GB purely from KV cache overhead we never use — our
+// context blocks are a few hundred to low thousands of tokens). Capping
+// this is what lets the advisor and population models coexist in GPU
+// memory instead of evicting each other on every alternating call.
+const NUM_CTX = parseInt(process.env.OLLAMA_NUM_CTX || '8192', 10)
 // Generous headroom for a busy/shared GPU or a cold model load (Ollama has
 // to load the model into memory on its first call, or after switching
 // OLLAMA_MODEL to a different advisor model between experiment runs).
@@ -31,6 +38,7 @@ async function chat(messages: ChatMessage[], opts: { json?: boolean; model?: str
         model: opts.model || MODEL,
         messages,
         stream: false,
+        options: { num_ctx: NUM_CTX },
         ...(opts.json ? { format: 'json' } : {}),
       }),
       signal: controller.signal,

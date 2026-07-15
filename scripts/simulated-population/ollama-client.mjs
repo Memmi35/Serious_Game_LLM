@@ -19,6 +19,11 @@ const MODEL = process.env.AGENT_POPULATION_MODEL || "qwen2.5:3b";
 // for a busy/shared GPU, not the expected normal case — see warmUp() below,
 // which is what actually protects against slow cold-start model loads.
 const TIMEOUT_MS = 90_000;
+// Mirrors lib/agent/ollama.ts's NUM_CTX — see that file for why an
+// unrequested context window (defaulting to each model's max, e.g. 131072
+// for deepseek-r1:32b) makes the advisor and population models evict each
+// other from GPU memory on every alternating call instead of coexisting.
+const NUM_CTX = parseInt(process.env.OLLAMA_NUM_CTX || "8192", 10);
 
 export const USE_MOCK = process.env.AGENT_MODE !== "ollama";
 
@@ -47,6 +52,7 @@ async function chatRaw(messages, opts, timeoutMs) {
         model: MODEL,
         messages,
         stream: false,
+        options: { num_ctx: NUM_CTX },
         ...(opts.json ? { format: "json" } : {}),
       }),
       signal: controller.signal,
