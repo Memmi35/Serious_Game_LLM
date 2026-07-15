@@ -29,6 +29,17 @@ function pick(arr) {
   return arr[Math.floor(rng() * arr.length)];
 }
 
+// Fisher-Yates, using the same seeded rng so the assignment stays
+// reproducible given SEED.
+function shuffle(arr, rngFn) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rngFn() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 // Trait bounds used both by the named archetypes (as anchors) and by the
 // randomly-sampled fill personas. Units:
 //   - riskAversion multiplies avg(flow/capacity) along the route (~0.2-1.5)
@@ -156,8 +167,13 @@ const OCCUPATIONS_AND_STAKES = [
   { occupation: "bus dispatcher", stake: "ironically, you have to be on time to send other people out on time" },
 ];
 
-function buildNarrative(index, rngFn) {
-  const name = FIRST_NAMES[Math.floor(rngFn() * FIRST_NAMES.length)];
+// name: pre-assigned from a shuffled, no-replacement draw (see PERSONAS
+// below) — two different agents having the identical first name was
+// confusing in transcripts/logs with no behavioral upside. Occupations are
+// still drawn with replacement: duplicates there are realistic (multiple
+// nurses can plausibly share a commute network) and there are only 15 of
+// them for 30 agents, so without-replacement isn't even possible twice over.
+function buildNarrative(name, rngFn) {
   const { occupation, stake } = OCCUPATIONS_AND_STAKES[Math.floor(rngFn() * OCCUPATIONS_AND_STAKES.length)];
   return { name, occupation, stake };
 }
@@ -258,8 +274,12 @@ const TOTAL_AGENTS = 30;
 const fillCount = TOTAL_AGENTS - ARCHETYPES.length;
 const sampled = Array.from({ length: fillCount }, (_, i) => samplePersona(i + ARCHETYPES.length + 1));
 
+// Without-replacement name assignment (modulo guard only matters if
+// TOTAL_AGENTS ever exceeds FIRST_NAMES.length; today they're equal).
+const shuffledNames = shuffle(FIRST_NAMES, rng);
+
 export const PERSONAS = [...ARCHETYPES, ...sampled].map((p, i) => {
-  const { name, occupation, stake } = buildNarrative(i, rng);
+  const { name, occupation, stake } = buildNarrative(shuffledNames[i % shuffledNames.length], rng);
   return {
     ...p,
     agentIndex: i + 1,
