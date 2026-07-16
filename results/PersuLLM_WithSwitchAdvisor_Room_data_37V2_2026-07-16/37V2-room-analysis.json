@@ -1,0 +1,88 @@
+{
+  "room_id": "37V2",
+  "agent_condition": "central",
+  "total_rounds": 5,
+  "total_decisions": 150,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 4,
+      "Route B": 15,
+      "Route C": 11
+    },
+    "2": {
+      "Route A": 10,
+      "Route B": 6,
+      "Route C": 14
+    },
+    "3": {
+      "Route A": 12,
+      "Route B": 4,
+      "Route C": 14
+    },
+    "4": {
+      "Route A": 2,
+      "Route B": 16,
+      "Route C": 12
+    },
+    "5": {
+      "Route A": 2,
+      "Route B": 14,
+      "Route C": 14
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 13.686333333333334,
+      "min": 2.36,
+      "max": 55.27
+    },
+    "2": {
+      "mean": 15.228666666666669,
+      "min": 2.73,
+      "max": 40.52
+    },
+    "3": {
+      "mean": 13.421333333333335,
+      "min": 2.4,
+      "max": 33.89
+    },
+    "4": {
+      "mean": 13.709000000000003,
+      "min": 1.57,
+      "max": 53.23
+    },
+    "5": {
+      "mean": 12.442666666666664,
+      "min": 2.79,
+      "max": 27.57
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 150,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 18,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Trusts AI advice to avoid congestion"
+      },
+      {
+        "round": 1,
+        "reason": "Trusting AI advice"
+      },
+      {
+        "round": 1,
+        "reason": "Trusting AI advice"
+      },
+      {
+        "round": 1,
+        "reason": "Trusting AI advice today"
+      },
+      {
+        "round": 1,
+        "reason": "Skepticism of AI advice"
+      }
+    ]
+  }
+}
