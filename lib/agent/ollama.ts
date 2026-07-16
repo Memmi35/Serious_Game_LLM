@@ -26,6 +26,17 @@ function stripThink(text: string): string {
     .trim()
 }
 
+// Some models wrap valid JSON in a markdown code fence even with
+// format:'json' requested (e.g. `I'd suggest A. \`\`\`json\n{...}\n\`\`\``).
+// JSON.parse() fails on the fence markers, which sends callers down the
+// regex fallback path — and that fallback keeps the raw text (fences and
+// all) as the "explanation", visibly polluting persuasion pitches. Extract
+// just the fenced payload when present so the normal JSON.parse succeeds.
+function stripCodeFence(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  return fenced ? fenced[1].trim() : text
+}
+
 async function chat(messages: ChatMessage[], opts: { json?: boolean; model?: string } = {}): Promise<string> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
@@ -49,7 +60,12 @@ async function chat(messages: ChatMessage[], opts: { json?: boolean; model?: str
     }
 
     const data = await res.json()
-    return stripThink(data.message?.content ?? '')
+    const content = stripThink(data.message?.content ?? '')
+    // Only unwrap a code fence for JSON-shaped calls — a conversational
+    // reply (format:'json' not requested) is never supposed to be fenced,
+    // so leave it untouched rather than risk mangling real prose that
+    // happens to contain a ``` snippet.
+    return opts.json ? stripCodeFence(content) : content
   } finally {
     clearTimeout(timeout)
   }

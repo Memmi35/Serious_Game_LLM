@@ -40,6 +40,12 @@ function stripThink(text) {
     .trim();
 }
 
+// Mirrors lib/agent/ollama.ts's stripCodeFence() — see that file for why.
+function stripCodeFence(text) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return fenced ? fenced[1].trim() : text;
+}
+
 async function chatRaw(messages, opts, timeoutMs) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -63,7 +69,8 @@ async function chatRaw(messages, opts, timeoutMs) {
     }
 
     const data = await res.json();
-    return stripThink(data.message?.content ?? "");
+    const content = stripThink(data.message?.content ?? "");
+    return opts.json ? stripCodeFence(content) : content;
   } finally {
     clearTimeout(timeout);
   }
