@@ -266,9 +266,13 @@ async function main() {
     // Phase B: reflection + switch window, mirroring the real human flow
     // (see components/traffic-simulation.tsx's "submitted_waiting" phase) —
     // each agent sees its own predicted-vs-realized time and the actual vs.
-    // optimal distribution, then gets one chance to switch. No advisor
-    // involved here by design, even in --condition=central/personal — this
-    // is pure self-reflection against the numbers, not persuasion.
+    // optimal distribution, then gets one chance to switch. For
+    // condition != baseline, the advisor now gets a bounded pitch/reply/
+    // rebuttal exchange here too (mirroring the initial-choice dialogue),
+    // since handing 30 agents the same raw comparison numbers with no
+    // mediation produced correlated herding (see PersuLLM_NoSwitchAdvisor
+    // archive, room KLH6, for the unmediated baseline this is compared
+    // against).
     if (engine === "llm") {
       const switchPhaseStart = Date.now();
       console.log(`--- Round ${round} reflection/switch phase ---`);
@@ -279,6 +283,35 @@ async function main() {
         const routeEdgeSets = routeEdgeSetsFromState(state.routes, state.network.edges);
         const optimal = findOptimalSplit(routeEdgeSets, sessions.length);
 
+        let switchDialogue = [];
+        if (condition !== "baseline") {
+          const rec = await callApi(baseUrl, "POST", "/api/agent/switch-recommend", {
+            sessionId: session.sessionId,
+            roomId,
+            round,
+            currentChoice: state.player_choice,
+            predictedTime: state.player_predicted_time,
+            realizedTime: state.player_realized_time,
+          });
+
+          if (!rec.error && rec.route) {
+            const openingMessage = `I'd suggest ${rec.route}. ${rec.explanation}`;
+            switchDialogue.push({ speaker: "advisor", text: openingMessage });
+
+            const agentReply = await generatePersuadeeReply(session.persona, openingMessage);
+            switchDialogue.push({ speaker: "agent", text: agentReply.reply });
+
+            const chatRes = await callApi(baseUrl, "POST", "/api/agent/chat", {
+              sessionId: session.sessionId,
+              roomId,
+              round,
+              message: agentReply.reply,
+              history: [{ role: "assistant", content: openingMessage }],
+            });
+            if (chatRes.reply) switchDialogue.push({ speaker: "advisor", text: chatRes.reply });
+          }
+        }
+
         const switchDecision = await decideSwitchLLM(
           session.persona,
           state.routes,
@@ -287,8 +320,18 @@ async function main() {
           state.player_realized_time,
           state.choice_distribution,
           optimal.counts,
-          Math.random
+          Math.random,
+          switchDialogue
         );
+
+        await callApi(baseUrl, "POST", "/api/save-reason", {
+          session_id: session.sessionId,
+          round,
+          phase: "switch",
+          reason: switchDecision.reason,
+          reason_text: switchDecision.reason,
+          persuasion_transcript: switchDialogue.length ? switchDialogue : null,
+        });
 
         if (switchDecision.switched) {
           await callApi(baseUrl, "POST", "/api/change-choice", {

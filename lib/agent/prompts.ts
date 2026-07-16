@@ -122,3 +122,44 @@ prefer a different route, engage with it honestly rather than dismissing it.
 export function chatInstructionFor(condition: string): string {
   return condition === 'central' ? PERSUADE_CHAT_INSTRUCTION : CHAT_INSTRUCTION
 }
+
+// Switch/reflection phase: previously had no advisor involvement at all —
+// the player was handed the raw final distribution and optimal split,
+// unmediated, with 30 players reading the identical numbers and reacting
+// independently. That produced correlated herding (many players all
+// switching toward the same "under-filled" route at once, overshooting
+// past the optimal split rather than converging on it). This instruction
+// explicitly asks the advisor to guard against that instead of just
+// repeating the comparison.
+export const SWITCH_RECOMMENDATION_INSTRUCTION = `
+The player already made their initial choice this round and has just seen
+how it played out — their own predicted vs. realized travel time, and the
+full distribution of everyone's choices vs. the system-optimal split. They
+have one chance to switch before this round locks in.
+
+Advise them on whether to switch, grounded in the numbers given to you
+below. Explicitly guard against overcorrection: if you tell them to switch
+toward whichever route the optimal split says is under-filled, remember
+every other under-filled player is likely seeing that same comparison —
+recommending everyone pile onto the same "fix" just creates the next
+bottleneck. Weigh the size of the current gap against that risk rather than
+always pushing toward the biggest shortfall.
+
+Respond with ONLY a JSON object, no other text, in this exact shape:
+{"route": "A" | "B" | "C", "explanation": "1-2 plain sentences grounded in the numbers above"}
+`
+
+export const PERSONAL_SWITCH_INSTRUCTION = `
+The player already made their initial choice this round and has just seen
+their own predicted vs. realized travel time. They have one chance to
+switch before this round locks in. State the tradeoff plainly, based only
+on their own numbers and history — no urgency or pressure tactics, and
+you cannot see what other players chose.
+
+Respond with ONLY a JSON object, no other text, in this exact shape:
+{"route": "A" | "B" | "C", "explanation": "1-2 plain sentences grounded in the numbers above"}
+`
+
+export function switchInstructionFor(condition: string): string {
+  return condition === 'personal' ? PERSONAL_SWITCH_INSTRUCTION : SWITCH_RECOMMENDATION_INSTRUCTION
+}

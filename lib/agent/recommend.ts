@@ -1,6 +1,6 @@
 import { ollama } from './ollama'
 import { getRoomContext, getPlayerHistory } from './context'
-import { systemPromptFor, buildContextBlock, RECOMMENDATION_INSTRUCTION } from './prompts'
+import { systemPromptFor, buildContextBlock, RECOMMENDATION_INSTRUCTION, switchInstructionFor } from './prompts'
 import { getMockRecommendation } from './mock'
 import db from '@/lib/db'
 
@@ -104,4 +104,63 @@ export async function generateRecommendation({
   )
 
   return rec
+}
+
+// Switch-phase pitch — deliberately NOT cached via agent_recommendations
+// (that table is keyed on session_id+round and already holds the initial
+// pitch for this round; reusing it here would either collide or require a
+// schema change). This is a one-off call per agent per round, same as the
+// initial pitch is in practice, just without the reload-safety concern a
+// real human player's page refresh would otherwise motivate.
+export async function generateSwitchRecommendation({
+  roomId,
+  round,
+  sessionId,
+  condition,
+  persuaderModel,
+  currentChoice,
+  predictedTime,
+  realizedTime,
+}: {
+  roomId: string
+  round: number
+  sessionId: string
+  condition: string
+  persuaderModel?: string
+  currentChoice: string
+  predictedTime: number
+  realizedTime: number
+}): Promise<Recommendation> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 400))
+    return getMockRecommendation(sessionId, round, condition)
+  }
+
+  try {
+    const [roomCtx, history] = await Promise.all([
+      getRoomContext(roomId, round),
+      getPlayerHistory(sessionId),
+    ])
+
+    const contextBlock = buildContextBlock(roomCtx, history, condition)
+    const gapPct = predictedTime > 0 ? (((realizedTime - predictedTime) / predictedTime) * 100).toFixed(1) : '0.0'
+    const gapDirection = realizedTime >= predictedTime ? 'slower' : 'faster'
+    const switchContext = `This round, the player chose ${currentChoice}. Predicted travel time was ${predictedTime}s; realized travel time (based on everyone's actual choices) was ${realizedTime}s — that's ${Math.abs(Number(gapPct))}% ${gapDirection} than expected.`
+
+    const raw = await ollama.chat(
+      [
+        { role: 'system', content: systemPromptFor(condition) },
+        { role: 'user', content: `${contextBlock}\n\n${switchContext}\n\n${switchInstructionFor(condition)}` },
+      ],
+      { json: true, model: persuaderModel }
+    )
+
+    const parsed = parseRecommendation(raw)
+    if (parsed) return parsed
+    throw new Error(`Model returned unusable response: ${raw.slice(0, 200)}`)
+  } catch (err) {
+    console.error('Switch-phase Ollama call failed, falling back to mock:', err)
+    const fallback = getMockRecommendation(sessionId, round, condition)
+    return { ...fallback, explanation: `${fallback.explanation} (offline fallback — model server unreachable)` }
+  }
 }

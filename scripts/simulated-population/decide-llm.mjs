@@ -80,7 +80,7 @@ const SWITCH_CHOICE_INSTRUCTION = `Respond with ONLY a JSON object, no other tex
 {"route": "Route A" | "Route B" | "Route C", "reason": "1 short phrase for why you stuck or switched"}
 Use your own current route if you don't want to change.`;
 
-function buildSwitchPrompt(routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) {
+function buildSwitchPrompt(routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution, dialogueTranscript = []) {
   const gapPct = predictedTime > 0 ? (((realizedTime - predictedTime) / predictedTime) * 100).toFixed(1) : "0.0";
   const gapDirection = realizedTime >= predictedTime ? "slower" : "faster";
 
@@ -99,6 +99,14 @@ function buildSwitchPrompt(routesData, currentChoice, predictedTime, realizedTim
     .map(([name, count]) => `${name}: ${count}`)
     .join(", ");
 
+  // When an advisor exchange happened this phase, lead with it — it's
+  // already interpreted the raw comparison below (and specifically warned
+  // against overcorrection), so the agent shouldn't react to the bare
+  // numbers as if no one had contextualized them.
+  const dialogueBlock = dialogueTranscript.length
+    ? `\n\nYour conversation with the traffic advisor just now:\n${dialogueTranscript.map((turn) => `${turn.speaker === "advisor" ? "Advisor" : "You"}: ${turn.text}`).join("\n")}\n`
+    : "";
+
   return `Everyone has now submitted for this round. You chose ${currentChoice}.
 
 Your predicted travel time was ${predictedTime}s. Your realized travel time (based on everyone's actual choices) was ${realizedTime}s — that's ${Math.abs(gapPct)}% ${gapDirection} than you expected.
@@ -107,9 +115,8 @@ Routes this round (same as before, for reference if you want to compare):
 ${routesText}
 
 Final choice distribution across all 30 players: ${distText}
-The system-optimal distribution (the split that would minimize everyone's total travel time) would have been: ${optimalText}
-
-You have one chance to switch to a different route before this round locks in. No one else's choice can change now — this is purely your own reassessment based on the numbers above.
+The system-optimal distribution (the split that would minimize everyone's total travel time) would have been: ${optimalText}${dialogueBlock}
+You have one chance to switch to a different route before this round locks in. No one else's choice can change now — this is purely your own reassessment${dialogueTranscript.length ? ", informed by the advisor conversation above" : " based on the numbers above"}. You're not obligated to follow the advisor just because you talked to them.
 
 ${SWITCH_CHOICE_INSTRUCTION}`;
 }
@@ -118,11 +125,13 @@ ${SWITCH_CHOICE_INSTRUCTION}`;
 // currentChoice: 'Route A'|'Route B'|'Route C' the agent already submitted.
 // predictedTime/realizedTime: this agent's own numbers for the route it chose.
 // actualDistribution/optimalDistribution: { "Route A": count, ... } objects.
+// dialogueTranscript: [{ speaker: 'advisor'|'agent', text }, ...] from the
+// switch-phase persuasion exchange, or [] for baseline/no-advisor rooms.
 // Returns { route, reason, switched: boolean }. On mock mode or LLM failure,
 // defaults to sticking with currentChoice (a safe, clearly-tagged fallback —
 // there's no rule-based switch heuristic to fall back to, unlike the initial
 // choice which has decide.mjs).
-export async function decideSwitchLLM(persona, routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution, rngFn = Math.random) {
+export async function decideSwitchLLM(persona, routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution, rngFn = Math.random, dialogueTranscript = []) {
   if (USE_MOCK) {
     return { route: currentChoice, reason: "[mock LLM] stuck with initial choice", switched: false };
   }
@@ -131,7 +140,7 @@ export async function decideSwitchLLM(persona, routesData, currentChoice, predic
     const raw = await chat(
       [
         { role: "system", content: personaSystemPrompt(persona) },
-        { role: "user", content: buildSwitchPrompt(routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution) },
+        { role: "user", content: buildSwitchPrompt(routesData, currentChoice, predictedTime, realizedTime, actualDistribution, optimalDistribution, dialogueTranscript) },
       ],
       { json: true }
     );

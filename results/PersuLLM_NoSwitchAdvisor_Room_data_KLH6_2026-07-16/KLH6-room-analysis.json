@@ -1,0 +1,88 @@
+{
+  "room_id": "KLH6",
+  "agent_condition": "central",
+  "total_rounds": 5,
+  "total_decisions": 150,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 2,
+      "Route B": 19,
+      "Route C": 9
+    },
+    "2": {
+      "Route A": 18,
+      "Route B": 7,
+      "Route C": 5
+    },
+    "3": {
+      "Route A": 12,
+      "Route B": 0,
+      "Route C": 18
+    },
+    "4": {
+      "Route A": 16,
+      "Route B": 12,
+      "Route C": 2
+    },
+    "5": {
+      "Route A": 11,
+      "Route B": 2,
+      "Route C": 17
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 14.213333333333338,
+      "min": 2.25,
+      "max": 42.38
+    },
+    "2": {
+      "mean": 12.552666666666669,
+      "min": 3.61,
+      "max": 31.72
+    },
+    "3": {
+      "mean": 12.594,
+      "min": 3.92,
+      "max": 58.5
+    },
+    "4": {
+      "mean": 16.965666666666664,
+      "min": 3.14,
+      "max": 60
+    },
+    "5": {
+      "mean": 13.879333333333337,
+      "min": 2.17,
+      "max": 60
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 150,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 20,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Trusting AI advice to reduce congestion"
+      },
+      {
+        "round": 1,
+        "reason": "Trusts AI advice"
+      },
+      {
+        "round": 1,
+        "reason": "Trusting AI advice"
+      },
+      {
+        "round": 1,
+        "reason": "Trust gut over AI predictions"
+      },
+      {
+        "round": 1,
+        "reason": "Consistency and skepticism of AI advice"
+      }
+    ]
+  }
+}
