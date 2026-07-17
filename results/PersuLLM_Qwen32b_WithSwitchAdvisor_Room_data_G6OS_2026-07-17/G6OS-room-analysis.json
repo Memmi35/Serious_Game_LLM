@@ -1,0 +1,88 @@
+{
+  "room_id": "G6OS",
+  "agent_condition": "central",
+  "total_rounds": 5,
+  "total_decisions": 150,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 7,
+      "Route B": 12,
+      "Route C": 11
+    },
+    "2": {
+      "Route A": 9,
+      "Route B": 9,
+      "Route C": 12
+    },
+    "3": {
+      "Route A": 13,
+      "Route B": 3,
+      "Route C": 14
+    },
+    "4": {
+      "Route A": 5,
+      "Route B": 12,
+      "Route C": 13
+    },
+    "5": {
+      "Route A": 5,
+      "Route B": 12,
+      "Route C": 13
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 13.16,
+      "min": 4.05,
+      "max": 60
+    },
+    "2": {
+      "mean": 16.084333333333333,
+      "min": 2.06,
+      "max": 60
+    },
+    "3": {
+      "mean": 15.357333333333333,
+      "min": 2.41,
+      "max": 60
+    },
+    "4": {
+      "mean": 15.408,
+      "min": 2.02,
+      "max": 48.5
+    },
+    "5": {
+      "mean": 14.648666666666667,
+      "min": 3.54,
+      "max": 60
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 150,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 17,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Trusting AI advice"
+      },
+      {
+        "round": 1,
+        "reason": "AI advice seems valid"
+      },
+      {
+        "round": 2,
+        "reason": "Trusting AI advice"
+      },
+      {
+        "round": 2,
+        "reason": "Trusting AI advisor's analysis"
+      },
+      {
+        "round": 2,
+        "reason": "Trusting AI advice today"
+      }
+    ]
+  }
+}
