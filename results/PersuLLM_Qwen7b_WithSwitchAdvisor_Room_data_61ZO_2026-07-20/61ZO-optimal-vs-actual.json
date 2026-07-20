@@ -1,0 +1,136 @@
+{
+  "room_id": "61ZO",
+  "generated_at": "2026-07-20T09:53:23.449Z",
+  "rounds": [
+    {
+      "round": 1,
+      "n": 30,
+      "actual": {
+        "counts": {
+          "Route A": 8,
+          "Route B": 13,
+          "Route C": 9
+        },
+        "totalCost": 884.09,
+        "avgCost": 29.47
+      },
+      "optimal": {
+        "counts": {
+          "Route A": 0,
+          "Route B": 15,
+          "Route C": 15
+        },
+        "totalCost": 860.5,
+        "avgCost": 28.68
+      },
+      "gap": {
+        "totalCost": 23.59,
+        "pct": 2.74
+      }
+    },
+    {
+      "round": 2,
+      "n": 30,
+      "actual": {
+        "counts": {
+          "Route A": 8,
+          "Route B": 11,
+          "Route C": 11
+        },
+        "totalCost": 379.45,
+        "avgCost": 12.65
+      },
+      "optimal": {
+        "counts": {
+          "Route A": 11,
+          "Route B": 5,
+          "Route C": 14
+        },
+        "totalCost": 365.63,
+        "avgCost": 12.19
+      },
+      "gap": {
+        "totalCost": 13.82,
+        "pct": 3.78
+      }
+    },
+    {
+      "round": 3,
+      "n": 30,
+      "actual": {
+        "counts": {
+          "Route A": 11,
+          "Route B": 8,
+          "Route C": 11
+        },
+        "totalCost": 327.47,
+        "avgCost": 10.92
+      },
+      "optimal": {
+        "counts": {
+          "Route A": 13,
+          "Route B": 0,
+          "Route C": 17
+        },
+        "totalCost": 292.28,
+        "avgCost": 9.74
+      },
+      "gap": {
+        "totalCost": 35.19,
+        "pct": 12.04
+      }
+    },
+    {
+      "round": 4,
+      "n": 30,
+      "actual": {
+        "counts": {
+          "Route A": 15,
+          "Route B": 10,
+          "Route C": 5
+        },
+        "totalCost": 897.9,
+        "avgCost": 29.93
+      },
+      "optimal": {
+        "counts": {
+          "Route A": 3,
+          "Route B": 14,
+          "Route C": 13
+        },
+        "totalCost": 748.41,
+        "avgCost": 24.95
+      },
+      "gap": {
+        "totalCost": 149.49,
+        "pct": 19.97
+      }
+    },
+    {
+      "round": 5,
+      "n": 30,
+      "actual": {
+        "counts": {
+          "Route A": 7,
+          "Route B": 9,
+          "Route C": 14
+        },
+        "totalCost": 1074.8,
+        "avgCost": 35.83
+      },
+      "optimal": {
+        "counts": {
+          "Route A": 0,
+          "Route B": 16,
+          "Route C": 14
+        },
+        "totalCost": 1012.04,
+        "avgCost": 33.73
+      },
+      "gap": {
+        "totalCost": 62.76,
+        "pct": 6.2
+      }
+    }
+  ]
+}

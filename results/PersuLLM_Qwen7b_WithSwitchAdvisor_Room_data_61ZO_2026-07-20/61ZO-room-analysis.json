@@ -1,0 +1,88 @@
+{
+  "room_id": "61ZO",
+  "agent_condition": "central",
+  "total_rounds": 5,
+  "total_decisions": 150,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 8,
+      "Route B": 13,
+      "Route C": 9
+    },
+    "2": {
+      "Route A": 8,
+      "Route B": 11,
+      "Route C": 11
+    },
+    "3": {
+      "Route A": 11,
+      "Route B": 8,
+      "Route C": 11
+    },
+    "4": {
+      "Route A": 15,
+      "Route B": 10,
+      "Route C": 5
+    },
+    "5": {
+      "Route A": 7,
+      "Route B": 9,
+      "Route C": 14
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 14.444999999999999,
+      "min": 4.14,
+      "max": 40.57
+    },
+    "2": {
+      "mean": 10.184333333333335,
+      "min": 1,
+      "max": 20.67
+    },
+    "3": {
+      "mean": 11.754333333333333,
+      "min": 2.46,
+      "max": 27.4
+    },
+    "4": {
+      "mean": 13.457333333333331,
+      "min": 3.77,
+      "max": 28.79
+    },
+    "5": {
+      "mean": 14.031666666666666,
+      "min": 2.41,
+      "max": 58.41
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 150,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 12,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Trust gut over AI"
+      },
+      {
+        "round": 1,
+        "reason": "AI advice seems valid today"
+      },
+      {
+        "round": 2,
+        "reason": "Fastest time with AI advice"
+      },
+      {
+        "round": 2,
+        "reason": "Trusts AI and best time"
+      },
+      {
+        "round": 2,
+        "reason": "Trusting AI advice today"
+      }
+    ]
+  }
+}
