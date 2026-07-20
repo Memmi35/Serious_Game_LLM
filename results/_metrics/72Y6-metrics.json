@@ -251,5 +251,10 @@
     "mockDecisions": 0,
     "advisorFallbackSignatures": 11,
     "codeFenceSignatures": 0
+  },
+  "liveDistributionReference": {
+    "advisorTurns": 600,
+    "referencingTurns": 340,
+    "referenceRatePct": 56.67
   }
 }

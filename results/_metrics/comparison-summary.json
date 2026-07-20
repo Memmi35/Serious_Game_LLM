@@ -235,6 +235,11 @@
       "mockDecisions": 0,
       "advisorFallbackSignatures": 0,
       "codeFenceSignatures": 4
+    },
+    "liveDistributionReference": {
+      "advisorTurns": 300,
+      "referencingTurns": 196,
+      "referenceRatePct": 65.33
     }
   },
   {
@@ -490,6 +495,11 @@
       "mockDecisions": 0,
       "advisorFallbackSignatures": 1,
       "codeFenceSignatures": 0
+    },
+    "liveDistributionReference": {
+      "advisorTurns": 600,
+      "referencingTurns": 345,
+      "referenceRatePct": 57.5
     }
   },
   {
@@ -745,6 +755,11 @@
       "mockDecisions": 0,
       "advisorFallbackSignatures": 0,
       "codeFenceSignatures": 0
+    },
+    "liveDistributionReference": {
+      "advisorTurns": 600,
+      "referencingTurns": 252,
+      "referenceRatePct": 42
     }
   },
   {
@@ -1000,6 +1015,11 @@
       "mockDecisions": 0,
       "advisorFallbackSignatures": 11,
       "codeFenceSignatures": 0
+    },
+    "liveDistributionReference": {
+      "advisorTurns": 600,
+      "referencingTurns": 340,
+      "referenceRatePct": 56.67
     }
   },
   {
@@ -1255,6 +1275,11 @@
       "mockDecisions": 0,
       "advisorFallbackSignatures": 0,
       "codeFenceSignatures": 0
+    },
+    "liveDistributionReference": {
+      "advisorTurns": 600,
+      "referencingTurns": 378,
+      "referenceRatePct": 63
     }
   }
 ]

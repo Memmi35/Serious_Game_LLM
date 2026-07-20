@@ -228,6 +228,37 @@ function round2(x) {
   return x == null || Number.isNaN(x) ? null : Math.round(x * 100) / 100;
 }
 
+// Quantifies how much the advisor's pitches actually lean on live
+// room-wide data about *other* players (the specific design choice
+// flagged as a concern for Phase 3 to remove/change) — e.g. "12 players",
+// "16/14 split", "already 5 have chosen". Offline regex heuristic, not an
+// LLM judge: catches a digit near player/choice/count language. Only
+// scans advisor turns (the commuter's own replies aren't the advisor
+// leaking anything). Central condition should score high here by design;
+// personal condition (or a future Phase 3 room) should score near zero,
+// since that advisor never has room-wide data to reference in the first
+// place — this metric is what makes that before/after comparison legible
+// the moment such a room exists.
+const LIVE_DISTRIBUTION_REGEX = /\b\d+(?:\s*\/\s*\d+)?\s*(?:players?|people|commuters?|travelers?|choos\w*|chosen|already|so far)\b/i;
+
+function computeDistributionReferenceMetrics(roundLogs) {
+  let advisorTurns = 0, referencingTurns = 0;
+  for (const row of roundLogs) {
+    for (const transcript of [row.persuasion_transcript, row.switch_transcript]) {
+      for (const turn of transcript || []) {
+        if (turn.speaker !== "advisor") continue;
+        advisorTurns++;
+        if (LIVE_DISTRIBUTION_REGEX.test(turn.text)) referencingTurns++;
+      }
+    }
+  }
+  return {
+    advisorTurns,
+    referencingTurns,
+    referenceRatePct: advisorTurns ? round2((referencingTurns / advisorTurns) * 100) : null,
+  };
+}
+
 function computeRoomMetrics(exportData) {
   const { room, round_logs: roundLogs } = exportData;
   return {
@@ -241,6 +272,7 @@ function computeRoomMetrics(exportData) {
     switching: computeSwitchMetrics(roundLogs),
     speed: computeSpeedMetrics(roundLogs),
     dataQuality: computeDataQuality(roundLogs),
+    liveDistributionReference: computeDistributionReferenceMetrics(roundLogs),
   };
 }
 
@@ -256,7 +288,7 @@ function main() {
 
     const outPath = path.join(outDir, `${metrics.room_id}-metrics.json`);
     fs.writeFileSync(outPath, JSON.stringify(metrics, null, 2));
-    console.log(`${metrics.room_id} (${metrics.persuader_model || metrics.agent_condition}): avg gap ${metrics.traffic.avgGapPct}%, avg delay ${metrics.traffic.avgTotalDelay}s, compliance ${metrics.compliance.successRatePct}%, switch rate ${metrics.switching.avgSwitchRatePct}%, ${metrics.speed.avgMsPerDecision}ms/decision -> ${outPath}`);
+    console.log(`${metrics.room_id} (${metrics.persuader_model || metrics.agent_condition}): avg gap ${metrics.traffic.avgGapPct}%, avg delay ${metrics.traffic.avgTotalDelay}s, compliance ${metrics.compliance.successRatePct}%, switch rate ${metrics.switching.avgSwitchRatePct}%, ${metrics.speed.avgMsPerDecision}ms/decision, live-dist. ref. rate ${metrics.liveDistributionReference.referenceRatePct}% -> ${outPath}`);
   }
 
   if (allMetrics.length > 1) {
@@ -266,16 +298,18 @@ function main() {
     const rows = allMetrics.map((m) => ({
       room: m.room_id,
       model: m.persuader_model || m.agent_condition,
+      condition: m.agent_condition,
       avg_gap_pct: m.traffic.avgGapPct,
       avg_delay_s: m.traffic.avgTotalDelay,
       compliance_pct: m.compliance.successRatePct,
       switch_rate_pct: m.switching.avgSwitchRatePct,
       ms_per_decision: m.speed.avgMsPerDecision,
       fallback_signatures: m.dataQuality.advisorFallbackSignatures,
+      live_dist_ref_pct: m.liveDistributionReference.referenceRatePct,
     }));
     const mdPath = path.join(outDir, "comparison-summary.md");
-    const header = "| Room | Model | Avg gap % | Avg delay (s) | Compliance % | Switch rate % | ms/decision | Fallback signatures |\n|---|---|---|---|---|---|---|---|\n";
-    const body = rows.map((r) => `| ${r.room} | ${r.model} | ${r.avg_gap_pct} | ${r.avg_delay_s} | ${r.compliance_pct} | ${r.switch_rate_pct} | ${r.ms_per_decision} | ${r.fallback_signatures} |`).join("\n");
+    const header = "| Room | Model | Condition | Avg gap % | Avg delay (s) | Compliance % | Switch rate % | ms/decision | Fallback signatures | Live-dist. ref. % |\n|---|---|---|---|---|---|---|---|---|---|\n";
+    const body = rows.map((r) => `| ${r.room} | ${r.model} | ${r.condition} | ${r.avg_gap_pct} | ${r.avg_delay_s} | ${r.compliance_pct} | ${r.switch_rate_pct} | ${r.ms_per_decision} | ${r.fallback_signatures} | ${r.live_dist_ref_pct} |`).join("\n");
     fs.writeFileSync(mdPath, header + body + "\n");
 
     console.log(`\nComparison summary -> ${summaryPath}`);
