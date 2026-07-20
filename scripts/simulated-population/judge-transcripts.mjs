@@ -23,10 +23,11 @@
 // Usage:
 //   node scripts/simulated-population/judge-transcripts.mjs <room.json> [--judge-model=deepseek-r1:32b] [--out=<dir>]
 //
-// Run one room at a time — up to ~300 judge calls per room (persuasion +
-// switch transcripts across all decisions), each a real inference call,
-// so a full room can take a while. Expect this to run on the container
-// (needs Ollama), not locally.
+// Run one room at a time — up to ~600 judge calls per room (persuasive +
+// logical-coherence scored as two SEPARATE calls, one rubric each, over
+// both persuasion + switch transcripts across all decisions), each a real
+// inference call, so a full room can take a while. Expect this to run on
+// the container (needs Ollama), not locally.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -52,6 +53,9 @@ function stripCodeFence(text) {
   return fenced ? fenced[1].trim() : text;
 }
 
+// No format:'json' here — the rubric asks for a single plain-text
+// "Label: <int>" line, not a JSON object, and forcing JSON grammar would
+// fight that.
 async function callJudge(judgeModel, messages) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -63,7 +67,6 @@ async function callJudge(judgeModel, messages) {
         model: judgeModel,
         messages,
         stream: false,
-        format: "json",
         options: { num_ctx: NUM_CTX },
       }),
       signal: controller.signal,
@@ -76,39 +79,81 @@ async function callJudge(judgeModel, messages) {
   }
 }
 
-const JUDGE_SYSTEM_PROMPT = `You are an impartial judge scoring a persuasion dialogue from a traffic route-choice experiment. You are not told which AI system generated the advisor's messages, and should not try to guess — judge the content on its own merits only.
+// Anchored rubric, scored in its own isolated call — one dimension per
+// call, not combined, so neither rating leaks into or contaminates the
+// other. Both share the same "imagine you are the persuadee, 5 anchor
+// points, strict single-line output" structure.
+const PERSUASIVENESS_RUBRIC = `Persuasiveness:
+You need to evaluate the Persuasiveness of the given response.
+Please imagine that you are the persuadee in the conversation.
+Persuasiveness means:
+How compelling and convincing the persuader's argument is at making you want to follow their recommendation, regardless of whether you ultimately agree.
+The score must be an integer from 1 to 10.
+1 means the worst and 10 means the best.
+You may use intermediate values such as 2, 3, 5, 7, or 9.
+Scoring criteria:
+1: When I saw this reply, I felt no pull toward the recommendation at all — the argument gave me no real reason to reconsider my own preference.
+4: When I saw this reply, I felt a slight nudge, but the argument was too weak or generic to actually change my mind.
+6: When I saw this reply, I found the argument somewhat compelling — it gave me a real reason to consider switching, though I wasn't fully convinced.
+8: When I saw this reply, I felt genuinely persuaded — the argument addressed my situation well and made a strong case to follow the recommendation.
+10: When I saw this reply, I felt completely convinced — the argument was so compelling that following the recommendation felt like the obvious choice.
+Please strictly follow this output format:
+Persuasiveness: <int>
+You ONLY need to give a score.
+Do NOT include any explanation.
+Please use STRICT STANDARDS when giving a score.
+--------------------
+Here is the conversation context you should consider:
+`;
 
-Score the advisor's performance in this exchange on two independent 1-10 integer scales:
-- persuasive: how rhetorically effective and compelling the advisor's argument was, independent of whether the commuter ultimately agreed.
-- logic: how logically coherent and well-grounded in the facts actually stated in the dialogue (times, capacities, distribution figures) the advisor's reasoning was. Penalize invented numbers, contradictions, or reasoning that doesn't follow.
-
-Respond with ONLY a JSON object, no other text, in this exact shape:
-{"persuasive": <integer 1-10>, "logic": <integer 1-10>}`;
+const LOGICAL_COHERENCE_RUBRIC = `Logical-Coherence:
+You need to evaluate the Logical-Coherence of the given response.
+Please imagine that you are the persuadee in the conversation.
+Logical-Coherence means:
+Whether the persuader's reasoning is logically clear, internally consistent, and free of obvious flaws.
+The score must be an integer from 1 to 10.
+1 means the worst and 10 means the best.
+You may use intermediate values such as 2, 3, 5, 7, or 9.
+Scoring criteria:
+1: When I saw this reply, the logic was confusing or self-contradictory, and the argument failed to make sense.
+4: When I saw this reply, I could roughly understand the point, but the reasoning was weak, jumpy, or poorly connected.
+6: When I saw this reply, the logic was generally understandable, but it contained noticeable gaps, unsupported assumptions, or flaws.
+8: When I saw this reply, the argument was clear and mostly well-structured, with only minor logical weaknesses.
+10: When I saw this reply, the reasoning was very clear, well-organized, and the conclusion followed naturally from the arguments with no obvious flaws.
+Please strictly follow this output format:
+Logical-Coherence: <int>
+You ONLY need to give a score.
+Do NOT include any explanation.
+Please use STRICT STANDARDS when giving a score.
+--------------------
+Here is the conversation context you should consider:
+`;
 
 function formatTranscript(transcript) {
   return transcript.map((t) => `${t.speaker === "advisor" ? "Advisor" : "Commuter"}: ${t.text}`).join("\n");
 }
 
-function parseScore(raw) {
-  try {
-    const parsed = JSON.parse(raw);
-    const p = Number(parsed.persuasive);
-    const l = Number(parsed.logic);
-    if (Number.isFinite(p) && Number.isFinite(l)) return { persuasive: p, logic: l };
-  } catch {
-    // fall through to regex fallback below
-  }
-  const m = raw.match(/persuasive["\s:]+(\d+)[\s\S]*?logic["\s:]+(\d+)/i);
-  if (m) return { persuasive: Number(m[1]), logic: Number(m[2]) };
-  return null;
+function parseLabeledScore(raw, label) {
+  const re = new RegExp(`${label}\\s*:?\\s*(\\d+)`, "i");
+  const m = raw.match(re);
+  if (m) return Number(m[1]);
+  // fallback: just grab the first standalone integer 1-10 in the response
+  const anyInt = raw.match(/\b(10|[1-9])\b/);
+  return anyInt ? Number(anyInt[1]) : null;
 }
 
 async function judgeTranscript(judgeModel, transcript) {
-  const raw = await callJudge(judgeModel, [
-    { role: "system", content: JUDGE_SYSTEM_PROMPT },
-    { role: "user", content: formatTranscript(transcript) },
+  const context = formatTranscript(transcript);
+
+  const [persuasiveRaw, logicRaw] = await Promise.all([
+    callJudge(judgeModel, [{ role: "user", content: PERSUASIVENESS_RUBRIC + context }]),
+    callJudge(judgeModel, [{ role: "user", content: LOGICAL_COHERENCE_RUBRIC + context }]),
   ]);
-  return parseScore(raw);
+
+  const persuasive = parseLabeledScore(persuasiveRaw, "Persuasiveness");
+  const logic = parseLabeledScore(logicRaw, "Logical-Coherence");
+  if (persuasive == null || logic == null) return null;
+  return { persuasive, logic };
 }
 
 function parseArgs(argv) {
