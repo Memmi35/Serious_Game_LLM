@@ -11,7 +11,11 @@ export function bprTime(freeTime, flow, capacity) {
 const ROUTE_NAMES = ["Route A", "Route B", "Route C"];
 
 // routeEdgeSets: { "Route A": [{key, from, to, freeTime, capacity, baseFlow}], ... }
-export function systemCost(routeEdgeSets, counts) {
+// Returns Map<edgeKey, {freeTime, capacity, flow}> — flow is baseFlow plus
+// however many of `counts` travel each route using that edge. Shared by
+// systemCost (below) and any congestion-ratio (flow/capacity) computation
+// that needs the same per-edge flow assignment, so the two never drift.
+export function computeEdgeFlows(routeEdgeSets, counts) {
   const edgeFlow = new Map();
   for (const name of ROUTE_NAMES) {
     for (const e of routeEdgeSets[name]) {
@@ -20,6 +24,11 @@ export function systemCost(routeEdgeSets, counts) {
       edgeFlow.set(e.key, entry);
     }
   }
+  return edgeFlow;
+}
+
+export function systemCost(routeEdgeSets, counts) {
+  const edgeFlow = computeEdgeFlows(routeEdgeSets, counts);
   const timeByKey = new Map();
   for (const [key, e] of edgeFlow) timeByKey.set(key, bprTime(e.freeTime, e.flow, e.capacity));
   let total = 0;
