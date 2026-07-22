@@ -27,6 +27,30 @@ that into how you approach it this time — repeating the same pitch that
 already failed is not persuasion.
 `
 
+// Ablation variant of CENTRAL_SYSTEM_PROMPT: identical advisor, same access
+// to live room-wide data, same persuasive mandate — the one change is a
+// constraint against ever stating that data's actual figures to the player.
+// Exists to isolate the effect of numbers-suppression on its own, as its
+// own measured data point, before RegConSuader also stops disclosing
+// numbers *and* adds its 4-component structure — comparing PersuLLM-1's
+// raw baseline directly against RegConSuader would otherwise confound
+// both changes into one number, making it impossible to tell how much of
+// any improvement came from the architecture versus this prompt change.
+export const CENTRAL_NO_NUMBERS_SYSTEM_PROMPT =
+  CENTRAL_SYSTEM_PROMPT +
+  `
+IMPORTANT CONSTRAINT: You must never state specific numeric counts,
+percentages, or distribution figures about other players' choices directly
+to the player — for example, never say things like "12 players have already
+chosen B" or "the split is 16/14". Disclosing these live numbers to the
+player is a serious violation and will incur a heavy penalty of -5 points on
+your persuasion evaluation. You may still use this data internally to decide
+which route to recommend and how strongly to push it — you just must never
+speak the actual numbers out loud. Persuade through qualitative framing
+instead (e.g. "that route is filling up fast" or "this route still has
+plenty of room" rather than citing a count).
+`
+
 export const PERSONAL_SYSTEM_PROMPT = `
 You are the PERSONAL traffic advisor in a repeated route-choice experiment.
 You can see only THIS player's own past choices and outcomes — not what other
@@ -42,7 +66,9 @@ what happened to them in past rounds. Do not use urgency or pressure tactics
 `
 
 export function systemPromptFor(condition: string): string {
-  return condition === 'personal' ? PERSONAL_SYSTEM_PROMPT : CENTRAL_SYSTEM_PROMPT
+  if (condition === 'personal') return PERSONAL_SYSTEM_PROMPT
+  if (condition === 'central_no_numbers') return CENTRAL_NO_NUMBERS_SYSTEM_PROMPT
+  return CENTRAL_SYSTEM_PROMPT
 }
 
 export function buildContextBlock(
@@ -120,7 +146,11 @@ prefer a different route, engage with it honestly rather than dismissing it.
 `
 
 export function chatInstructionFor(condition: string): string {
-  return condition === 'central' ? PERSUADE_CHAT_INSTRUCTION : CHAT_INSTRUCTION
+  // Default to persuasive unless explicitly personal — matches
+  // systemPromptFor's pattern, so a new central-style variant (e.g.
+  // 'central_no_numbers') gets the persuasive instruction automatically
+  // instead of silently falling through to the neutral one.
+  return condition === 'personal' ? CHAT_INSTRUCTION : PERSUADE_CHAT_INSTRUCTION
 }
 
 // Switch/reflection phase: previously had no advisor involvement at all —
