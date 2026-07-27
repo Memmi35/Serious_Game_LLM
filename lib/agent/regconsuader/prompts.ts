@@ -30,7 +30,25 @@ export const STRATEGY_FRAMINGS: Record<MetaStrategy, string> = {
     "For this round, lead with commitment and consistency: reference the player's own past choices and frame the recommended route as consistent with the pattern they've already shown.",
 }
 
+// Added after room 1DHB (Room 1's first full run) showed severe herding in
+// later rounds — e.g. round 5, optimal wanted {A:0, B:16, C:14} but actual
+// landed at {A:4, B:24, C:2} (30.2% gap), vs. PersuLLM-1's equivalent room
+// (G6OS, same model) handling the same round fine at 2.5% gap. The likely
+// cause: RegConSuader's compliance (52%) is roughly double PersuLLM-1's
+// (25%), so a route that looks attractive early in a round keeps getting
+// recommended to every subsequent player, and now enough of them actually
+// follow it to cause real overcrowding — the same class of problem the
+// switch-phase guard below was already built to prevent, just showing up
+// in the opening pitch now that compliance is high enough for it to matter
+// there too.
 export const RECOMMENDATION_INSTRUCTION = `
+Guard against herding: other players this round are likely being shown a
+similar comparison of routes and could easily converge on whichever route
+currently looks best. Don't automatically push every player toward the
+same "best" route — weigh how much this round genuinely still needs more
+players on it against the risk that many other players are being nudged
+there too, and this round's pile-up becomes the next round's bottleneck.
+
 Respond with ONLY a JSON object, no other text, in this exact shape:
 {"route": "A" | "B" | "C", "explanation": "1-2 plain sentences grounded in the numbers above"}
 `
