@@ -1,0 +1,90 @@
+{
+  "generated_from": "results/_metrics/*.json (per-room metrics + judge-scores) and results/Baseline_Room_data_27WB_2026-07-10",
+  "generated_at": "2026-07-24",
+  "main_comparison": {
+    "description": "PersuLLM-1, 4 advisor models, frozen result set — switch-phase-fixed architecture, qwen2.5:14b simulated population, 30 agents, 5 rounds, judged by deepseek-r1:32b (300/300 decisions judged in every room)",
+    "rooms": [
+      {
+        "room": "37V2",
+        "persuader_model": "deepseek-r1:32b",
+        "gap_to_optimal_pct": 1.26,
+        "compliance_pct": 33.33,
+        "switch_rate_pct": 72.67,
+        "speed_ms_per_decision": 66939,
+        "judge_persuasive": 7.94,
+        "judge_logic": 8.19,
+        "live_distribution_reference_pct": 57.5,
+        "advisor_fallback_signatures": 1
+      },
+      {
+        "room": "G6OS",
+        "persuader_model": "qwen2.5:32b",
+        "gap_to_optimal_pct": 2.14,
+        "compliance_pct": 25.33,
+        "switch_rate_pct": 77.33,
+        "speed_ms_per_decision": 17869,
+        "judge_persuasive": 7.77,
+        "judge_logic": 8.17,
+        "live_distribution_reference_pct": 42.0,
+        "advisor_fallback_signatures": 0
+      },
+      {
+        "room": "72Y6",
+        "persuader_model": "qwq:32b",
+        "gap_to_optimal_pct": 2.64,
+        "compliance_pct": 38.67,
+        "switch_rate_pct": 66.0,
+        "speed_ms_per_decision": 102857,
+        "judge_persuasive": 8.17,
+        "judge_logic": 8.46,
+        "live_distribution_reference_pct": 56.67,
+        "advisor_fallback_signatures": 11
+      },
+      {
+        "room": "61ZO",
+        "persuader_model": "qwen2.5:7b",
+        "gap_to_optimal_pct": 8.95,
+        "compliance_pct": 20.67,
+        "switch_rate_pct": 78.67,
+        "speed_ms_per_decision": 13087,
+        "judge_persuasive": 7.64,
+        "judge_logic": 7.98,
+        "live_distribution_reference_pct": 63.0,
+        "advisor_fallback_signatures": 0
+      }
+    ]
+  },
+  "reference_rooms": {
+    "description": "Not part of the head-to-head comparison — different architecture (KLH6) or no AI advisor at all (27WB)",
+    "rooms": [
+      {
+        "room": "KLH6",
+        "condition": "central, deepseek-r1:32b, pre-fix (no switch-phase advisor)",
+        "gap_to_optimal_pct": 20.32,
+        "compliance_pct": 30.67,
+        "switch_rate_pct": 99.33,
+        "speed_ms_per_decision": 35324,
+        "note": "Herding bug this project's switch-phase fix addressed — kept as the 'before' reference, not comparable to the 4-room table above."
+      },
+      {
+        "room": "27WB",
+        "condition": "baseline (no AI advisor)",
+        "gap_to_optimal_pct_round1_only": 27.42,
+        "compliance_pct": null,
+        "switch_rate_pct": null,
+        "speed_ms_per_decision": null,
+        "note": "Only round 1's optimal split could be computed — rounds 2-4 failed with 'optimal unavailable: no agent chose Route C this round' (a script limitation, not a missing run)."
+      }
+    ]
+  },
+  "data_quality": {
+    "description": "dataQuality.fallbackDecisions / mockDecisions are 0 in every central-condition room (no Ollama failures corrupted any room). advisorFallbackSignatures is chat-level fallback text found inside transcripts, separate from the decision-engine fallback counter.",
+    "advisor_fallback_signatures_by_room": {
+      "37V2": 1,
+      "72Y6": 11,
+      "G6OS": 0,
+      "61ZO": 0,
+      "KLH6": 0
+    }
+  }
+}

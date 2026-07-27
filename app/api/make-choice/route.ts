@@ -128,8 +128,19 @@ export async function POST(request: NextRequest) {
 
       const recommendedRoute = rec.rows[0]?.recommended_route ?? null
 
-      const compliance = recommendedRoute !== null
-        ? (chosenRoute === recommendedRoute)
+      // recommendedRoute is stored as the bare letter ("A"/"B"/"C") in
+      // agent_recommendations, while chosenRoute is the full label ("Route
+      // A") — comparing them directly without normalizing always evaluated
+      // to false, so ai_compliance was silently wrong for every decision
+      // ever logged. Normalize before comparing, matching the pattern
+      // scripts/simulated-population/compute-metrics.mjs already uses when
+      // recomputing compliance independently from raw round_logs.
+      const normalizedRecommended = recommendedRoute
+        ? (recommendedRoute.startsWith('Route') ? recommendedRoute : `Route ${recommendedRoute}`)
+        : null
+
+      const compliance = normalizedRecommended !== null
+        ? (chosenRoute === normalizedRecommended)
         : null
 
       const agentCondition = room.agent_condition ?? 'baseline'
