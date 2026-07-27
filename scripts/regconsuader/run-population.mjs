@@ -22,7 +22,35 @@ import { Pool } from "pg";
 import { PERSONAS } from "../simulated-population/personas.mjs";
 import { decideSwitchLLM, generatePersuadeeReply, decideFinalChoiceAfterPersuasion } from "../simulated-population/decide-llm.mjs";
 import { USE_MOCK, warmUp } from "../simulated-population/ollama-client.mjs";
-import { findOptimalSplit, routeEdgeSetsFromState } from "../simulated-population/optimal-split.mjs";
+import { findOptimalSplit, routeEdgeSetsFromState, bprTime } from "../simulated-population/optimal-split.mjs";
+
+// Fix for the herding artifact found in rooms 1DHB/GC6X: routesData's
+// predicted_time (from get-state) is computed as "baseFlow + 1" — a fixed
+// baseline that never reflects how many of the 30 agents have already
+// chosen that route earlier in this same round. The advisor sees the real,
+// growing distribution internally and does diversify its recommendations
+// as a round progresses, but the persuadee's own final-choice reasoning was
+// only ever shown the frozen number, so a route that looks fine to agent 1
+// still looks exactly as fine to agent 25 even after 20 agents already
+// piled onto it — no amount of persuasion can out-argue a number that
+// never moves. Recomputing predicted_time here, using routeCounts (which
+// the round loop already tracks as it processes agents one at a time),
+// gives the persuadee an accurate, live-crowding-aware number instead.
+// Lives only in this file — decide-llm.mjs and PersuLLM-1's own runner are
+// untouched.
+function liveAdjustedRoutesData(state, routeCounts) {
+  const routeEdgeSets = routeEdgeSetsFromState(state.routes, state.network.edges);
+  const adjusted = {};
+  for (const [name, route] of Object.entries(state.routes)) {
+    const alreadyOnRoute = routeCounts[name] || 0;
+    const liveTime = routeEdgeSets[name].reduce(
+      (sum, e) => sum + bprTime(e.freeTime, e.baseFlow + alreadyOnRoute + 1, e.capacity),
+      0
+    );
+    adjusted[name] = { ...route, predicted_time: Math.round(liveTime * 100) / 100 };
+  }
+  return adjusted;
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -200,7 +228,7 @@ async function main() {
 
       const decision = await decideFinalChoiceAfterPersuasion(
         session.persona,
-        state.routes,
+        liveAdjustedRoutesData(state, routeCounts),
         state.network.edges,
         session.previousChoice,
         dialogue,
@@ -272,7 +300,7 @@ async function main() {
 
       const switchDecision = await decideSwitchLLM(
         session.persona,
-        state.routes,
+        liveAdjustedRoutesData(state, routeCounts),
         state.player_choice,
         state.player_predicted_time,
         state.player_realized_time,
