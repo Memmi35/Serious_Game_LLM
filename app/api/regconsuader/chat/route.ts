@@ -3,7 +3,7 @@ import db from '@/lib/db'
 import { ollama } from '@/lib/agent/ollama'
 import { getRoomContext, getPlayerHistory } from '@/lib/agent/context'
 import { REGCONSUADER_SYSTEM_PROMPT, buildContextBlock, reactiveChatInstruction, type MetaStrategy } from '@/lib/agent/regconsuader/prompts'
-import { assignStrategy } from '@/lib/agent/regconsuader/strategy'
+import { pickStrategyFromScorecard } from '@/lib/agent/regconsuader/strategy'
 
 // Separate endpoint from /api/agent/chat (PersuLLM-1) — see project memory
 // on keeping PersuLLM-1's own code path untouched.
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       `SELECT regconsuader_strategy FROM agent_recommendations WHERE session_id = $1 AND round = $2`,
       [sessionId, round]
     )
-    const strategy: MetaStrategy = cached.rows[0]?.regconsuader_strategy ?? assignStrategy(sessionId, round)
+    const strategy: MetaStrategy = cached.rows[0]?.regconsuader_strategy ?? (await pickStrategyFromScorecard(sessionId, round))
 
     const [roomCtx, playerHistory] = await Promise.all([
       getRoomContext(roomId, round),

@@ -15,7 +15,7 @@ import {
   buildContextBlock,
   type MetaStrategy,
 } from './prompts'
-import { assignStrategy } from './strategy'
+import { pickStrategyFromScorecard } from './strategy'
 
 type Recommendation = {
   route: 'A' | 'B' | 'C'
@@ -66,7 +66,7 @@ export async function generateRegConSuaderRecommendation({
     }
   }
 
-  const strategy = assignStrategy(sessionId, round)
+  const strategy = await pickStrategyFromScorecard(sessionId, round)
 
   const [roomCtx, history] = await Promise.all([
     getRoomContext(roomId, round),
@@ -130,7 +130,7 @@ export async function generateRegConSuaderSwitchRecommendation({
     `SELECT regconsuader_strategy FROM agent_recommendations WHERE session_id = $1 AND round = $2`,
     [sessionId, round]
   )
-  const strategy: MetaStrategy = cached.rows[0]?.regconsuader_strategy ?? assignStrategy(sessionId, round)
+  const strategy: MetaStrategy = cached.rows[0]?.regconsuader_strategy ?? (await pickStrategyFromScorecard(sessionId, round))
 
   const [roomCtx, history] = await Promise.all([
     getRoomContext(roomId, round),
