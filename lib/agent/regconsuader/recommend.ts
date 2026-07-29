@@ -16,6 +16,7 @@ import {
   type MetaStrategy,
 } from './prompts'
 import { pickStrategyFromScorecard } from './strategy'
+import { getMockRecommendation } from '@/lib/agent/mock'
 
 type Recommendation = {
   route: 'A' | 'B' | 'C'
@@ -75,20 +76,34 @@ export async function generateRegConSuaderRecommendation({
 
   const contextBlock = buildContextBlock(roomCtx, history)
 
-  const raw = await ollama.chat(
-    [
-      { role: 'system', content: REGCONSUADER_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: `${contextBlock}\n\n${STRATEGY_FRAMINGS[strategy]}\n\n${RECOMMENDATION_INSTRUCTION}`,
-      },
-    ],
-    { json: true, model: persuaderModel }
-  )
-
-  const parsed = parseRecommendation(raw)
-  if (!parsed) {
-    throw new Error(`RegConSuader model returned unusable response: ${raw.slice(0, 200)}`)
+  let parsed: { route: 'A' | 'B' | 'C'; explanation: string } | null = null
+  try {
+    const raw = await ollama.chat(
+      [
+        { role: 'system', content: REGCONSUADER_SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: `${contextBlock}\n\n${STRATEGY_FRAMINGS[strategy]}\n\n${RECOMMENDATION_INSTRUCTION}`,
+        },
+      ],
+      { json: true, model: persuaderModel }
+    )
+    parsed = parseRecommendation(raw)
+    if (!parsed) throw new Error(`RegConSuader model returned unusable response: ${raw.slice(0, 200)}`)
+  } catch (err) {
+    // Matches lib/agent/recommend.ts's exact fallback pattern (including the
+    // "(offline fallback ...)" tag text) — compute-metrics.mjs's
+    // advisorFallbackSignatures check greps transcripts for this exact
+    // substring, so a room degrading gracefully here still shows up
+    // correctly in data-quality metrics instead of looking silently clean.
+    // Added after room SV9P (qwq:32b) crashed the whole run on a single
+    // Ollama timeout — qwq:32b's own PersuLLM-1 room already averaged
+    // 102.8s/decision, past the 90s client timeout, so this was always
+    // going to happen with this model; the fix is resilience, not just a
+    // longer timeout.
+    console.error('RegConSuader Ollama call failed, falling back to mock:', err)
+    const fallback = getMockRecommendation(sessionId, round, 'central')
+    parsed = { ...fallback, explanation: `${fallback.explanation} (offline fallback — model server unreachable)` }
   }
 
   await db.query(
@@ -142,20 +157,24 @@ export async function generateRegConSuaderSwitchRecommendation({
   const gapDirection = realizedTime >= predictedTime ? 'slower' : 'faster'
   const switchContext = `This round, the player chose ${currentChoice}. Predicted travel time was ${predictedTime}s; realized travel time (based on everyone's actual choices) was ${realizedTime}s — that's ${Math.abs(Number(gapPct))}% ${gapDirection} than expected.`
 
-  const raw = await ollama.chat(
-    [
-      { role: 'system', content: REGCONSUADER_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: `${contextBlock}\n\n${switchContext}\n\n${switchRecommendationInstruction(strategy)}`,
-      },
-    ],
-    { json: true, model: persuaderModel }
-  )
-
-  const parsed = parseRecommendation(raw)
-  if (!parsed) {
-    throw new Error(`RegConSuader switch model returned unusable response: ${raw.slice(0, 200)}`)
+  let parsed: { route: 'A' | 'B' | 'C'; explanation: string } | null = null
+  try {
+    const raw = await ollama.chat(
+      [
+        { role: 'system', content: REGCONSUADER_SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: `${contextBlock}\n\n${switchContext}\n\n${switchRecommendationInstruction(strategy)}`,
+        },
+      ],
+      { json: true, model: persuaderModel }
+    )
+    parsed = parseRecommendation(raw)
+    if (!parsed) throw new Error(`RegConSuader switch model returned unusable response: ${raw.slice(0, 200)}`)
+  } catch (err) {
+    console.error('RegConSuader switch-phase Ollama call failed, falling back to mock:', err)
+    const fallback = getMockRecommendation(sessionId, round, 'central')
+    parsed = { ...fallback, explanation: `${fallback.explanation} (offline fallback — model server unreachable)` }
   }
 
   return { ...parsed, strategy }
