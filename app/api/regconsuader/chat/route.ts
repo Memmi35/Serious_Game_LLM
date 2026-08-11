@@ -51,17 +51,30 @@ export async function POST(req: NextRequest) {
           }))
       : []
 
-    const reply = await ollama.chat(
-      [
-        { role: 'system', content: `${REGCONSUADER_SYSTEM_PROMPT}\n\n${reactiveChatInstruction(strategy)}` },
-        { role: 'user', content: contextBlock },
-        ...priorMessages,
-        { role: 'user', content: message },
-      ],
-      { model: persuaderModel }
-    )
-
-    return NextResponse.json({ reply: reply || 'The advisor had nothing to add.' })
+    try {
+      const reply = await ollama.chat(
+        [
+          { role: 'system', content: `${REGCONSUADER_SYSTEM_PROMPT}\n\n${reactiveChatInstruction(strategy)}` },
+          { role: 'user', content: contextBlock },
+          ...priorMessages,
+          { role: 'user', content: message },
+        ],
+        { model: persuaderModel }
+      )
+      return NextResponse.json({ reply: reply || 'The advisor had nothing to add.' })
+    } catch (modelErr) {
+      // Matches lib/agent/agent/chat/route.ts's exact pattern: degrade to a
+      // 200 with a placeholder reply instead of a 500. Room T0WQ (qwq:32b)
+      // died here at round 4/5, 187 minutes in — the recommend/switch-
+      // recommend calls already got this fallback treatment, but this
+      // endpoint was missed, so a single slow chat call still took the
+      // whole run down instead of degrading gracefully like the rest of
+      // the pipeline now does.
+      console.error('RegConSuader Ollama chat call failed:', modelErr)
+      return NextResponse.json({
+        reply: 'The advisor is temporarily unreachable — try again in a moment.',
+      })
+    }
   } catch (err) {
     console.error('RegConSuader chat error:', err)
     return NextResponse.json({ error: 'Chat failed' }, { status: 500 })
