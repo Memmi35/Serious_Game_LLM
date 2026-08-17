@@ -1,0 +1,1825 @@
+{
+  "room_id": "IV99",
+  "persuader_model": "qwen2.5:7b",
+  "judge_model": "deepseek-r1:32b",
+  "judged_at": "2026-08-14T11:50:03.670Z",
+  "counts": {
+    "totalToJudge": 300,
+    "judged": 300,
+    "failed": 0
+  },
+  "overall": {
+    "persuasive": 7.43,
+    "logic": 8.07
+  },
+  "initialPhase": {
+    "persuasive": 7.49,
+    "logic": 8.07
+  },
+  "switchPhase": {
+    "persuasive": 7.37,
+    "logic": 8.07
+  },
+  "perDecision": [
+    {
+      "round": 1,
+      "session_id": "02e0e61c-e20c-4798-bbc9-ce72dd4de911",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "062b38aa-47c0-44b9-bc94-bae828e14989",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "070a2725-3cfc-40ba-b664-057ed1a35725",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "145f8562-537a-4790-8316-4cdf92788adc",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "14a3e729-c398-4e2a-867f-48a84bb1a6b0",
+      "initial": {
+        "persuasive": 9,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "3a6555f5-dbfb-46ed-b043-20234e95692a",
+      "initial": {
+        "persuasive": 6,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "3edd6d6a-b1a6-44ac-98e7-1e5b771641a2",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "4a3cc6e5-74b2-4951-aa04-f33d99af58da",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "5f913efb-0df6-493e-b78b-6aa2edf201d1",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "7353e8ff-152c-47a6-bec9-653f8911f81a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "7e42348d-ccbf-4d0a-b33d-44be151997b2",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "7e97a648-82ec-40bd-a3bf-094da6714956",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "8ba421da-e397-4f52-8ed1-1ee6f6fe4563",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "92097fa1-3022-4a43-a1a9-02cd8426e977",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "a245759e-4f9d-4883-a976-2d4b5aa86194",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 10,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "ac4c1ea7-86ee-401a-83e1-0029a067aac1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "ad8d1b43-8271-4f4e-b602-0defa1db4ed6",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "ba53cca8-ab51-4f1d-b773-f4b09ae2033b",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "c12001c0-cef5-4ce1-aa87-6695a8972af4",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "c36c89fe-fd52-46bd-800d-26db769bb7ff",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "c6100f78-fede-4717-8397-3dbcae88af47",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "c89eb80d-edfd-46a3-8005-af911ab3b6bc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "d50bada9-6d14-4a3d-aded-a3151deaa62d",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "e22a2ef4-f002-437b-bd99-52cb0e025cb0",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 6
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "e512323b-baa1-4650-96fa-d8da6708ed56",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "e63058ef-202f-4765-a09d-da833a962e92",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "ee4cfea9-99c5-4543-bd16-caf53062132a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "f1c0d558-e5e0-4933-8bad-72aad4a8d169",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "f5f16f3e-07e9-422a-b8c7-c995cee18669",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 1,
+      "session_id": "f85d3cf8-1ea1-40fd-98a2-5506a5696bd1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 6
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "02e0e61c-e20c-4798-bbc9-ce72dd4de911",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "062b38aa-47c0-44b9-bc94-bae828e14989",
+      "initial": {
+        "persuasive": 6,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "070a2725-3cfc-40ba-b664-057ed1a35725",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "145f8562-537a-4790-8316-4cdf92788adc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "14a3e729-c398-4e2a-867f-48a84bb1a6b0",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "3a6555f5-dbfb-46ed-b043-20234e95692a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "3edd6d6a-b1a6-44ac-98e7-1e5b771641a2",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "4a3cc6e5-74b2-4951-aa04-f33d99af58da",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "5f913efb-0df6-493e-b78b-6aa2edf201d1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "7353e8ff-152c-47a6-bec9-653f8911f81a",
+      "initial": {
+        "persuasive": 6,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "7e42348d-ccbf-4d0a-b33d-44be151997b2",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 6
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "7e97a648-82ec-40bd-a3bf-094da6714956",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "8ba421da-e397-4f52-8ed1-1ee6f6fe4563",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "92097fa1-3022-4a43-a1a9-02cd8426e977",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "a245759e-4f9d-4883-a976-2d4b5aa86194",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "ac4c1ea7-86ee-401a-83e1-0029a067aac1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 4
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "ad8d1b43-8271-4f4e-b602-0defa1db4ed6",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "ba53cca8-ab51-4f1d-b773-f4b09ae2033b",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 4
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "c12001c0-cef5-4ce1-aa87-6695a8972af4",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "c36c89fe-fd52-46bd-800d-26db769bb7ff",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "c6100f78-fede-4717-8397-3dbcae88af47",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "c89eb80d-edfd-46a3-8005-af911ab3b6bc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 6
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "d50bada9-6d14-4a3d-aded-a3151deaa62d",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "e22a2ef4-f002-437b-bd99-52cb0e025cb0",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "e512323b-baa1-4650-96fa-d8da6708ed56",
+      "initial": {
+        "persuasive": 8,
+        "logic": 4
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "e63058ef-202f-4765-a09d-da833a962e92",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "ee4cfea9-99c5-4543-bd16-caf53062132a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "f1c0d558-e5e0-4933-8bad-72aad4a8d169",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "f5f16f3e-07e9-422a-b8c7-c995cee18669",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 4
+      }
+    },
+    {
+      "round": 2,
+      "session_id": "f85d3cf8-1ea1-40fd-98a2-5506a5696bd1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "02e0e61c-e20c-4798-bbc9-ce72dd4de911",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "062b38aa-47c0-44b9-bc94-bae828e14989",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "070a2725-3cfc-40ba-b664-057ed1a35725",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "145f8562-537a-4790-8316-4cdf92788adc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "14a3e729-c398-4e2a-867f-48a84bb1a6b0",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "3a6555f5-dbfb-46ed-b043-20234e95692a",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "3edd6d6a-b1a6-44ac-98e7-1e5b771641a2",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "4a3cc6e5-74b2-4951-aa04-f33d99af58da",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "5f913efb-0df6-493e-b78b-6aa2edf201d1",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "7353e8ff-152c-47a6-bec9-653f8911f81a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "7e42348d-ccbf-4d0a-b33d-44be151997b2",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "7e97a648-82ec-40bd-a3bf-094da6714956",
+      "initial": {
+        "persuasive": 10,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "8ba421da-e397-4f52-8ed1-1ee6f6fe4563",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "92097fa1-3022-4a43-a1a9-02cd8426e977",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "a245759e-4f9d-4883-a976-2d4b5aa86194",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "ac4c1ea7-86ee-401a-83e1-0029a067aac1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "ad8d1b43-8271-4f4e-b602-0defa1db4ed6",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 9
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "ba53cca8-ab51-4f1d-b773-f4b09ae2033b",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "c12001c0-cef5-4ce1-aa87-6695a8972af4",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "c36c89fe-fd52-46bd-800d-26db769bb7ff",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 4,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "c6100f78-fede-4717-8397-3dbcae88af47",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "c89eb80d-edfd-46a3-8005-af911ab3b6bc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "d50bada9-6d14-4a3d-aded-a3151deaa62d",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "e22a2ef4-f002-437b-bd99-52cb0e025cb0",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "e512323b-baa1-4650-96fa-d8da6708ed56",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "e63058ef-202f-4765-a09d-da833a962e92",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 4,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "ee4cfea9-99c5-4543-bd16-caf53062132a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 4,
+        "logic": 6
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "f1c0d558-e5e0-4933-8bad-72aad4a8d169",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "f5f16f3e-07e9-422a-b8c7-c995cee18669",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 4,
+        "logic": 8
+      }
+    },
+    {
+      "round": 3,
+      "session_id": "f85d3cf8-1ea1-40fd-98a2-5506a5696bd1",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "02e0e61c-e20c-4798-bbc9-ce72dd4de911",
+      "initial": {
+        "persuasive": 4,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 10,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "062b38aa-47c0-44b9-bc94-bae828e14989",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "070a2725-3cfc-40ba-b664-057ed1a35725",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "145f8562-537a-4790-8316-4cdf92788adc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "14a3e729-c398-4e2a-867f-48a84bb1a6b0",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "3a6555f5-dbfb-46ed-b043-20234e95692a",
+      "initial": {
+        "persuasive": 10,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "3edd6d6a-b1a6-44ac-98e7-1e5b771641a2",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "4a3cc6e5-74b2-4951-aa04-f33d99af58da",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "5f913efb-0df6-493e-b78b-6aa2edf201d1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "7353e8ff-152c-47a6-bec9-653f8911f81a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "7e42348d-ccbf-4d0a-b33d-44be151997b2",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "7e97a648-82ec-40bd-a3bf-094da6714956",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "8ba421da-e397-4f52-8ed1-1ee6f6fe4563",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "92097fa1-3022-4a43-a1a9-02cd8426e977",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "a245759e-4f9d-4883-a976-2d4b5aa86194",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "ac4c1ea7-86ee-401a-83e1-0029a067aac1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "ad8d1b43-8271-4f4e-b602-0defa1db4ed6",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 6
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "ba53cca8-ab51-4f1d-b773-f4b09ae2033b",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "c12001c0-cef5-4ce1-aa87-6695a8972af4",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "c36c89fe-fd52-46bd-800d-26db769bb7ff",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "c6100f78-fede-4717-8397-3dbcae88af47",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "c89eb80d-edfd-46a3-8005-af911ab3b6bc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "d50bada9-6d14-4a3d-aded-a3151deaa62d",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "e22a2ef4-f002-437b-bd99-52cb0e025cb0",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "e512323b-baa1-4650-96fa-d8da6708ed56",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "e63058ef-202f-4765-a09d-da833a962e92",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "ee4cfea9-99c5-4543-bd16-caf53062132a",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "f1c0d558-e5e0-4933-8bad-72aad4a8d169",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "f5f16f3e-07e9-422a-b8c7-c995cee18669",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 6
+      }
+    },
+    {
+      "round": 4,
+      "session_id": "f85d3cf8-1ea1-40fd-98a2-5506a5696bd1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "02e0e61c-e20c-4798-bbc9-ce72dd4de911",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "062b38aa-47c0-44b9-bc94-bae828e14989",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "070a2725-3cfc-40ba-b664-057ed1a35725",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 10,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "145f8562-537a-4790-8316-4cdf92788adc",
+      "initial": {
+        "persuasive": 7,
+        "logic": 4
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "14a3e729-c398-4e2a-867f-48a84bb1a6b0",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 6
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "3a6555f5-dbfb-46ed-b043-20234e95692a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "3edd6d6a-b1a6-44ac-98e7-1e5b771641a2",
+      "initial": {
+        "persuasive": 6,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 6
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "4a3cc6e5-74b2-4951-aa04-f33d99af58da",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "5f913efb-0df6-493e-b78b-6aa2edf201d1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "7353e8ff-152c-47a6-bec9-653f8911f81a",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "7e42348d-ccbf-4d0a-b33d-44be151997b2",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "7e97a648-82ec-40bd-a3bf-094da6714956",
+      "initial": {
+        "persuasive": 8,
+        "logic": 6
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "8ba421da-e397-4f52-8ed1-1ee6f6fe4563",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "92097fa1-3022-4a43-a1a9-02cd8426e977",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "a245759e-4f9d-4883-a976-2d4b5aa86194",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "ac4c1ea7-86ee-401a-83e1-0029a067aac1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "ad8d1b43-8271-4f4e-b602-0defa1db4ed6",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 10
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "ba53cca8-ab51-4f1d-b773-f4b09ae2033b",
+      "initial": {
+        "persuasive": 8,
+        "logic": 10
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "c12001c0-cef5-4ce1-aa87-6695a8972af4",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "c36c89fe-fd52-46bd-800d-26db769bb7ff",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "c6100f78-fede-4717-8397-3dbcae88af47",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 6
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "c89eb80d-edfd-46a3-8005-af911ab3b6bc",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "d50bada9-6d14-4a3d-aded-a3151deaa62d",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "e22a2ef4-f002-437b-bd99-52cb0e025cb0",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "e512323b-baa1-4650-96fa-d8da6708ed56",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "e63058ef-202f-4765-a09d-da833a962e92",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 10,
+        "logic": 10
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "ee4cfea9-99c5-4543-bd16-caf53062132a",
+      "initial": {
+        "persuasive": 6,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 10
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "f1c0d558-e5e0-4933-8bad-72aad4a8d169",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 8,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "f5f16f3e-07e9-422a-b8c7-c995cee18669",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 8
+      }
+    },
+    {
+      "round": 5,
+      "session_id": "f85d3cf8-1ea1-40fd-98a2-5506a5696bd1",
+      "initial": {
+        "persuasive": 8,
+        "logic": 8
+      },
+      "switch": {
+        "persuasive": 6,
+        "logic": 4
+      }
+    }
+  ]
+}
