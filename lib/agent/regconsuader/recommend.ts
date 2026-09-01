@@ -16,7 +16,29 @@ import {
   type MetaStrategy,
 } from './prompts'
 import { pickStrategyFromScorecard } from './strategy'
+import { pickStrategyWithLLM } from './llm-selector'
 import { getMockRecommendation } from '@/lib/agent/mock'
+
+// Experiment A toggle: REGCONSUADER_SELECTOR=llm swaps the frozen-scorecard
+// lookup for the LLM-based per-player selector (llm-selector.ts). Defaults
+// to the scorecard so existing Room 2 behavior is unchanged unless this is
+// explicitly set — keeps both mechanisms runnable/comparable rather than
+// one replacing the other. See project roadmap memory ("Post-meeting task
+// list") for why this is scoped as one isolated variable change.
+const SELECTOR_MODE = process.env.REGCONSUADER_SELECTOR === 'llm' ? 'llm' : 'scorecard'
+
+async function pickStrategy(
+  sessionId: string,
+  round: number,
+  history: Awaited<ReturnType<typeof getPlayerHistory>>,
+  persuaderModel?: string
+): Promise<{ strategy: MetaStrategy; reasoning: string | null }> {
+  if (SELECTOR_MODE === 'llm') {
+    return pickStrategyWithLLM(sessionId, round, history, persuaderModel)
+  }
+  const strategy = await pickStrategyFromScorecard(sessionId, round)
+  return { strategy, reasoning: null }
+}
 
 type Recommendation = {
   route: 'A' | 'B' | 'C'
@@ -67,12 +89,12 @@ export async function generateRegConSuaderRecommendation({
     }
   }
 
-  const strategy = await pickStrategyFromScorecard(sessionId, round)
-
   const [roomCtx, history] = await Promise.all([
     getRoomContext(roomId, round),
     getPlayerHistory(sessionId),
   ])
+
+  const { strategy, reasoning } = await pickStrategy(sessionId, round, history, persuaderModel)
 
   const contextBlock = buildContextBlock(roomCtx, history)
 
@@ -108,10 +130,10 @@ export async function generateRegConSuaderRecommendation({
 
   await db.query(
     `INSERT INTO agent_recommendations
-       (session_id, room_id, round, recommended_route, explanation, regconsuader_strategy)
-     VALUES ($1, $2, $3, $4, $5, $6)
+       (session_id, room_id, round, recommended_route, explanation, regconsuader_strategy, regconsuader_selector_reasoning)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (session_id, round) DO NOTHING`,
-    [sessionId, roomId, round, parsed.route, parsed.explanation, strategy]
+    [sessionId, roomId, round, parsed.route, parsed.explanation, strategy, reasoning]
   )
 
   return { ...parsed, strategy }
@@ -141,16 +163,17 @@ export async function generateRegConSuaderSwitchRecommendation({
   predictedTime: number
   realizedTime: number
 }): Promise<Recommendation> {
-  const cached = await db.query(
-    `SELECT regconsuader_strategy FROM agent_recommendations WHERE session_id = $1 AND round = $2`,
-    [sessionId, round]
-  )
-  const strategy: MetaStrategy = cached.rows[0]?.regconsuader_strategy ?? (await pickStrategyFromScorecard(sessionId, round))
-
-  const [roomCtx, history] = await Promise.all([
+  const [cached, roomCtx, history] = await Promise.all([
+    db.query(
+      `SELECT regconsuader_strategy FROM agent_recommendations WHERE session_id = $1 AND round = $2`,
+      [sessionId, round]
+    ),
     getRoomContext(roomId, round),
     getPlayerHistory(sessionId),
   ])
+  const strategy: MetaStrategy =
+    cached.rows[0]?.regconsuader_strategy ??
+    (await pickStrategy(sessionId, round, history, persuaderModel)).strategy
 
   const contextBlock = buildContextBlock(roomCtx, history)
   const gapPct = predictedTime > 0 ? (((realizedTime - predictedTime) / predictedTime) * 100).toFixed(1) : '0.0'
