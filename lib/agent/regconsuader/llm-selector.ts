@@ -56,26 +56,38 @@ ignored advice might respond better to a different framing than the
 round's overall best performer; a player with no history yet should
 probably lean on the aggregate data more heavily.
 
-Respond with ONLY a JSON object, no other text, in this exact shape:
-{"strategy": "authority" | "social_proof" | "consistency", "reasoning": "1 short sentence"}
+You MUST include both fields below — a response missing "reasoning" is
+invalid and will be discarded. Respond with ONLY a JSON object, no other
+text, in this exact shape, both keys required:
+{"strategy": "authority" | "social_proof" | "consistency", "reasoning": "1 short sentence explaining why this player specifically"}
 `
 
 type StrategyChoice = { strategy: MetaStrategy; reasoning: string | null }
 
+// Requires BOTH fields present — a strategy choice with no reasoning is
+// treated as invalid (not silently accepted with reasoning:null), since we
+// can't tell whether the model actually reasoned about this specific
+// player or just pattern-matched a plausible label. An invalid response
+// here triggers the same fallback-to-scorecard path as an outright Ollama
+// failure. Found via smoke test (room KFA4, 2026-08-25): llama3.1 reliably
+// returned {"strategy": "..."} while dropping "reasoning" under the
+// original, softer phrasing — this stricter version + the sharper prompt
+// wording ("MUST include both fields... will be discarded") together fix it.
 function parseStrategyChoice(raw: string): StrategyChoice | null {
   try {
     const parsed = JSON.parse(raw)
-    if (parsed && META_STRATEGIES.includes(parsed.strategy)) {
-      return {
-        strategy: parsed.strategy as MetaStrategy,
-        reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning.slice(0, 500) : null,
-      }
+    if (
+      parsed &&
+      META_STRATEGIES.includes(parsed.strategy) &&
+      typeof parsed.reasoning === 'string' &&
+      parsed.reasoning.trim().length > 0
+    ) {
+      return { strategy: parsed.strategy as MetaStrategy, reasoning: parsed.reasoning.slice(0, 500) }
     }
   } catch {
     // fall through
   }
-  const match = raw.match(/authority|social_proof|consistency/i)
-  return match ? { strategy: match[0].toLowerCase() as MetaStrategy, reasoning: null } : null
+  return null
 }
 
 export async function pickStrategyWithLLM(
