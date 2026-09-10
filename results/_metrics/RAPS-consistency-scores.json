@@ -1,0 +1,1170 @@
+{
+  "room_id": "RAPS",
+  "persuader_model": "qwen2.5:7b",
+  "agent_condition": "regconsuader",
+  "judge_model": "deepseek-r1:32b",
+  "judged_at": "2026-09-09T15:27:04.951Z",
+  "counts": {
+    "totalDecisions": 150,
+    "totalJudged": 144,
+    "totalFailed": 6,
+    "checkedClearIntent": 68,
+    "unclearIntent": 76,
+    "inconsistent": 14
+  },
+  "inconsistencyRatePct": 20.59,
+  "perDecision": [
+    {
+      "round": 1,
+      "session_id": "05207c06-cd34-4161-833e-b4146e933193",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter expressed uncertainty about Route B and did not explicitly state a chosen route."
+    },
+    {
+      "round": 1,
+      "session_id": "0fee7609-0a97-42a8-be32-3cd6d0bda492",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states they will stick with Route A."
+    },
+    {
+      "round": 1,
+      "session_id": "13d8537a-e806-42d3-a2c3-a3952be8ff08",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter's final statement leans towards choosing C as safer from traffic jams."
+    },
+    {
+      "round": 1,
+      "session_id": "1481f9a1-6d0f-420b-9c4b-7c61c1de3cc3",
+      "stated_route": "A",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter explicitly stated they would stick with their initial judgment, which was Route A."
+    },
+    {
+      "round": 1,
+      "session_id": "1883c478-5f54-4810-bcaf-a765c57b4123",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly commit to any specific route."
+    },
+    {
+      "round": 1,
+      "session_id": "21260e94-209a-46c2-9976-87b1e4e0613d",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route preference in their final statement."
+    },
+    {
+      "round": 1,
+      "session_id": "216d43a6-ee1c-4689-9962-8dc30f7363f5",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a preferred route."
+    },
+    {
+      "round": 1,
+      "session_id": "289bafc4-07d8-441e-abdd-f099298d01ba",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": false,
+      "reasoning": "The commuter expressed uncertainty about choosing a route and did not commit to Route A."
+    },
+    {
+      "round": 1,
+      "session_id": "37fd6303-d009-4550-868c-42b68305d2f4",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's final statement did not commit to a specific route."
+    },
+    {
+      "round": 1,
+      "session_id": "3b4344f5-05a0-4e86-95e4-9e5614869b3d",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated they would 'give it a shot' and later confirmed choosing Route A."
+    },
+    {
+      "round": 1,
+      "session_id": "3d9ff0d0-fb3f-4273-af26-bc58e99f5fcb",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter did not clearly commit to a specific route in their final statement."
+    },
+    {
+      "round": 1,
+      "session_id": "50f96fb7-825b-4777-8e1f-0d8fbc90d177",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route, only considered past choices."
+    },
+    {
+      "round": 1,
+      "session_id": "5c25806a-b448-4004-873e-f27acf536ea0",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "Commuter's last statement does not specify a route choice."
+    },
+    {
+      "round": 1,
+      "session_id": "76eb85f3-8623-425b-a3b4-c007a20e4e73",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly commit to a specific route in their final statement."
+    },
+    {
+      "round": 1,
+      "session_id": "7b504058-0852-46dc-a86e-6af9b4f5689b",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated a preference for Route B in their final statement."
+    },
+    {
+      "round": 1,
+      "session_id": "90c65e0b-d6a9-4f29-9f1e-c1e2f7dbc191",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's words never clearly commit to a specific route."
+    },
+    {
+      "round": 1,
+      "session_id": "9bb2246e-b2d1-4113-801d-b8090621a50f",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not explicitly commit to a specific route but implies sticking with their current one."
+    },
+    {
+      "round": 1,
+      "session_id": "aaed7a90-8bab-4c6e-95dd-a19024183389",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "Commuter indicated preference for familiar routes that worked before, aligning with Route C."
+    },
+    {
+      "round": 1,
+      "session_id": "af824aa3-375e-41a4-bdaf-7e2e34a26896",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not explicitly commit to a specific route."
+    },
+    {
+      "round": 1,
+      "session_id": "b0a0792c-af73-4491-aab7-ab4247546df1",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route but asked a question about balancing routes."
+    },
+    {
+      "round": 1,
+      "session_id": "b5d2dcc8-051b-4e72-8290-41dcc0d51fa7",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter's last statement seeks confirmation to try Route C first, indicating an intent to take it."
+    },
+    {
+      "round": 1,
+      "session_id": "c0e89a1e-6f38-4762-8df2-b5e9427ee5b4",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a preference for Route A, B, or C; they were evaluating information about Route B."
+    },
+    {
+      "round": 1,
+      "session_id": "c1071c13-de9d-4ba7-8870-a6ee3ea07a47",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route preference in their final statement."
+    },
+    {
+      "round": 1,
+      "session_id": "cd86291a-f557-4e8a-af06-84092548fcf9",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route choice but considered the suggestion."
+    },
+    {
+      "round": 1,
+      "session_id": "cf757a23-45d0-44f7-891e-e35ec0a264f8",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a chosen route but expressed uncertainty about Route B without committing to another."
+    },
+    {
+      "round": 1,
+      "session_id": "fd3246c9-7ec9-40d4-81b7-6fc6ffb7eab2",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state their final choice."
+    },
+    {
+      "round": 2,
+      "session_id": "05207c06-cd34-4161-833e-b4146e933193",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly commit to a specific route in their final statement."
+    },
+    {
+      "round": 2,
+      "session_id": "0fee7609-0a97-42a8-be32-3cd6d0bda492",
+      "stated_route": "A",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter agreed to test Route A but the logged final choice was Route B."
+    },
+    {
+      "round": 2,
+      "session_id": "13d8537a-e806-42d3-a2c3-a3952be8ff08",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route letter."
+    },
+    {
+      "round": 2,
+      "session_id": "1481f9a1-6d0f-420b-9c4b-7c61c1de3cc3",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter's final statement did not commit to a specific route, yet the logged choice was Route B."
+    },
+    {
+      "round": 2,
+      "session_id": "1883c478-5f54-4810-bcaf-a765c57b4123",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states their intention to take Route C."
+    },
+    {
+      "round": 2,
+      "session_id": "21260e94-209a-46c2-9976-87b1e4e0613d",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not clearly indicate a chosen route."
+    },
+    {
+      "round": 2,
+      "session_id": "216d43a6-ee1c-4689-9962-8dc30f7363f5",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter refers to their 'usual route,' which the advisor had mentioned as Route B."
+    },
+    {
+      "round": 2,
+      "session_id": "289bafc4-07d8-441e-abdd-f099298d01ba",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "Commuter agreed to follow the AI's guidance based on past success, aligning with Route C."
+    },
+    {
+      "round": 2,
+      "session_id": "37fd6303-d009-4550-868c-42b68305d2f4",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly commit to a specific route in their final statement."
+    },
+    {
+      "round": 2,
+      "session_id": "3b4344f5-05a0-4e86-95e4-9e5614869b3d",
+      "stated_route": "A",
+      "chosen_route": "C",
+      "consistent": false,
+      "reasoning": "The commuter stated they would try Route A, but the logged final choice was Route C."
+    },
+    {
+      "round": 2,
+      "session_id": "3cbec3ba-956b-441c-ac81-48ea4c8c3cd2",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route choice in their final statement."
+    },
+    {
+      "round": 2,
+      "session_id": "3d9ff0d0-fb3f-4273-af26-bc58e99f5fcb",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": false,
+      "reasoning": "The commuter did not explicitly state their chosen route, but the logged choice is Route A."
+    },
+    {
+      "round": 2,
+      "session_id": "50f96fb7-825b-4777-8e1f-0d8fbc90d177",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not clearly commit to a specific route."
+    },
+    {
+      "round": 2,
+      "session_id": "5c25806a-b448-4004-873e-f27acf536ea0",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated that their gut says Route C will still be fastest."
+    },
+    {
+      "round": 2,
+      "session_id": "6b89fe58-3218-4e42-9f18-ebccf7c3dbf4",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's last statement does not explicitly mention a specific route, but the logged choice is Route B."
+    },
+    {
+      "round": 2,
+      "session_id": "76eb85f3-8623-425b-a3b4-c007a20e4e73",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly state a specific route in their final statement."
+    },
+    {
+      "round": 2,
+      "session_id": "7b504058-0852-46dc-a86e-6af9b4f5689b",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": false,
+      "reasoning": "Commuter did not specify a route but chose A."
+    },
+    {
+      "round": 2,
+      "session_id": "899d1904-b45e-464a-87d9-7fb6961e2193",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter expressed a desire to confirm benefits without committing to a specific route."
+    },
+    {
+      "round": 2,
+      "session_id": "90c65e0b-d6a9-4f29-9f1e-c1e2f7dbc191",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter's words did not explicitly commit to a specific route."
+    },
+    {
+      "round": 2,
+      "session_id": "9bb2246e-b2d1-4113-801d-b8090621a50f",
+      "stated_route": "A",
+      "chosen_route": "C",
+      "consistent": false,
+      "reasoning": "The commuter explicitly stated leaning towards Route A, but the logged choice was Route C."
+    },
+    {
+      "round": 2,
+      "session_id": "aaed7a90-8bab-4c6e-95dd-a19024183389",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a chosen route in their final response."
+    },
+    {
+      "round": 2,
+      "session_id": "aee31f4f-442a-4159-a48e-9c30e75910bf",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "Commuter explicitly stated they would try Route B."
+    },
+    {
+      "round": 2,
+      "session_id": "af824aa3-375e-41a4-bdaf-7e2e34a26896",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route choice in their final statement."
+    },
+    {
+      "round": 2,
+      "session_id": "b0a0792c-af73-4491-aab7-ab4247546df1",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a preferred route; they only asked for information about A and B."
+    },
+    {
+      "round": 2,
+      "session_id": "b5d2dcc8-051b-4e72-8290-41dcc0d51fa7",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly commit to a specific route."
+    },
+    {
+      "round": 2,
+      "session_id": "c0e89a1e-6f38-4762-8df2-b5e9427ee5b4",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly state a specific route preference."
+    },
+    {
+      "round": 2,
+      "session_id": "c1071c13-de9d-4ba7-8870-a6ee3ea07a47",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states they will stick with Route B."
+    },
+    {
+      "round": 2,
+      "session_id": "cd86291a-f557-4e8a-af06-84092548fcf9",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly chose Route A."
+    },
+    {
+      "round": 2,
+      "session_id": "cf757a23-45d0-44f7-891e-e35ec0a264f8",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly commit to a specific route in their final statement."
+    },
+    {
+      "round": 2,
+      "session_id": "fd3246c9-7ec9-40d4-81b7-6fc6ffb7eab2",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route preference; they asked for a comparison but didn't commit."
+    },
+    {
+      "round": 3,
+      "session_id": "05207c06-cd34-4161-833e-b4146e933193",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter indicated a preference for their past successful route, which aligns with Route C."
+    },
+    {
+      "round": 3,
+      "session_id": "0fee7609-0a97-42a8-be32-3cd6d0bda492",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter agreed to follow the trend, indicating their intent to take Route C."
+    },
+    {
+      "round": 3,
+      "session_id": "13d8537a-e806-42d3-a2c3-a3952be8ff08",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated they would take Route C in their last turn."
+    },
+    {
+      "round": 3,
+      "session_id": "1481f9a1-6d0f-420b-9c4b-7c61c1de3cc3",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated they would stick with Route C."
+    },
+    {
+      "round": 3,
+      "session_id": "1883c478-5f54-4810-bcaf-a765c57b4123",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter's last statement indicates a preference for Route A, matching the logged choice."
+    },
+    {
+      "round": 3,
+      "session_id": "21260e94-209a-46c2-9976-87b1e4e0613d",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter's last statement does not clearly commit to a specific route."
+    },
+    {
+      "round": 3,
+      "session_id": "216d43a6-ee1c-4689-9962-8dc30f7363f5",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a chosen route."
+    },
+    {
+      "round": 3,
+      "session_id": "289bafc4-07d8-441e-abdd-f099298d01ba",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route but considered Route B while leaning on habit and AI advice without commitment."
+    },
+    {
+      "round": 3,
+      "session_id": "37fd6303-d009-4550-868c-42b68305d2f4",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route preference in their final statement."
+    },
+    {
+      "round": 3,
+      "session_id": "3b4344f5-05a0-4e86-95e4-9e5614869b3d",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter commits to trying Route A in their final statement."
+    },
+    {
+      "round": 3,
+      "session_id": "3cbec3ba-956b-441c-ac81-48ea4c8c3cd2",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated they would stick with Route B."
+    },
+    {
+      "round": 3,
+      "session_id": "3d9ff0d0-fb3f-4273-af26-bc58e99f5fcb",
+      "stated_route": "A",
+      "chosen_route": "C",
+      "consistent": false,
+      "reasoning": "Commuter stated intention to follow Route A but logged choice is Route C."
+    },
+    {
+      "round": 3,
+      "session_id": "50f96fb7-825b-4777-8e1f-0d8fbc90d177",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter's last statement leans towards choosing Route A."
+    },
+    {
+      "round": 3,
+      "session_id": "5c25806a-b448-4004-873e-f27acf536ea0",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter's final statement did not explicitly mention a specific route."
+    },
+    {
+      "round": 3,
+      "session_id": "6b89fe58-3218-4e42-9f18-ebccf7c3dbf4",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route choice."
+    },
+    {
+      "round": 3,
+      "session_id": "76eb85f3-8623-425b-a3b4-c007a20e4e73",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route."
+    },
+    {
+      "round": 3,
+      "session_id": "7b504058-0852-46dc-a86e-6af9b4f5689b",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route (A, B, or C) in their final statement."
+    },
+    {
+      "round": 3,
+      "session_id": "899d1904-b45e-464a-87d9-7fb6961e2193",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter refers to their 'usual route,' which corresponds to Route C as mentioned earlier."
+    },
+    {
+      "round": 3,
+      "session_id": "90c65e0b-d6a9-4f29-9f1e-c1e2f7dbc191",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "Commuter explicitly stated that Route A makes sense for today."
+    },
+    {
+      "round": 3,
+      "session_id": "9bb2246e-b2d1-4113-801d-b8090621a50f",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's final statement did not clearly indicate a specific route choice."
+    },
+    {
+      "round": 3,
+      "session_id": "aaed7a90-8bab-4c6e-95dd-a19024183389",
+      "stated_route": "B",
+      "chosen_route": "C",
+      "consistent": false,
+      "reasoning": "The commuter stated they lean towards B, but the logged choice is C."
+    },
+    {
+      "round": 3,
+      "session_id": "aee31f4f-442a-4159-a48e-9c30e75910bf",
+      "stated_route": "B",
+      "chosen_route": "C",
+      "consistent": false,
+      "reasoning": "The commuter explicitly chose Route B in their last statement, but the logged choice is Route C."
+    },
+    {
+      "round": 3,
+      "session_id": "b0a0792c-af73-4491-aab7-ab4247546df1",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter agrees to try Route A as suggested by the advisor."
+    },
+    {
+      "round": 3,
+      "session_id": "b5d2dcc8-051b-4e72-8290-41dcc0d51fa7",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter's last statement does not clearly commit to a specific route."
+    },
+    {
+      "round": 3,
+      "session_id": "c0e89a1e-6f38-4762-8df2-b5e9427ee5b4",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated their intention to take Route B."
+    },
+    {
+      "round": 3,
+      "session_id": "c1071c13-de9d-4ba7-8870-a6ee3ea07a47",
+      "stated_route": "A",
+      "chosen_route": "C",
+      "consistent": false,
+      "reasoning": "The commuter expressed intent to try Route A but logged as taking Route C."
+    },
+    {
+      "round": 3,
+      "session_id": "cd86291a-f557-4e8a-af06-84092548fcf9",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route choice."
+    },
+    {
+      "round": 3,
+      "session_id": "cf757a23-45d0-44f7-891e-e35ec0a264f8",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a preferred route in their last statement."
+    },
+    {
+      "round": 3,
+      "session_id": "fd3246c9-7ec9-40d4-81b7-6fc6ffb7eab2",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly name a route, only indicated agreement with the advisor's suggestion of Route A."
+    },
+    {
+      "round": 4,
+      "session_id": "05207c06-cd34-4161-833e-b4146e933193",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states their preference for sticking to their usual route."
+    },
+    {
+      "round": 4,
+      "session_id": "0fee7609-0a97-42a8-be32-3cd6d0bda492",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "Commuter indicates a preference for consistency, which aligns with Route A."
+    },
+    {
+      "round": 4,
+      "session_id": "13d8537a-e806-42d3-a2c3-a3952be8ff08",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states they will 'go with C' in their last turn."
+    },
+    {
+      "round": 4,
+      "session_id": "1481f9a1-6d0f-420b-9c4b-7c61c1de3cc3",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route preference in their final comment."
+    },
+    {
+      "round": 4,
+      "session_id": "1883c478-5f54-4810-bcaf-a765c57b4123",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated they would stick to their history, aligning with Route A."
+    },
+    {
+      "round": 4,
+      "session_id": "21260e94-209a-46c2-9976-87b1e4e0613d",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly chose Route C as less risky."
+    },
+    {
+      "round": 4,
+      "session_id": "216d43a6-ee1c-4689-9962-8dc30f7363f5",
+      "stated_route": "A",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter explicitly chose Route A, but the log shows Route B."
+    },
+    {
+      "round": 4,
+      "session_id": "289bafc4-07d8-441e-abdd-f099298d01ba",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly commit to a route letter."
+    },
+    {
+      "round": 4,
+      "session_id": "37fd6303-d009-4550-868c-42b68305d2f4",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "Commuter explicitly states they still lean towards B."
+    },
+    {
+      "round": 4,
+      "session_id": "3b4344f5-05a0-4e86-95e4-9e5614869b3d",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated they will keep route A."
+    },
+    {
+      "round": 4,
+      "session_id": "3cbec3ba-956b-441c-ac81-48ea4c8c3cd2",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a preferred route in their final turn."
+    },
+    {
+      "round": 4,
+      "session_id": "3d9ff0d0-fb3f-4273-af26-bc58e99f5fcb",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly choose a route and remained uncertain."
+    },
+    {
+      "round": 4,
+      "session_id": "50f96fb7-825b-4777-8e1f-0d8fbc90d177",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states they will stick with Route A."
+    },
+    {
+      "round": 4,
+      "session_id": "5c25806a-b448-4004-873e-f27acf536ea0",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter's final statement was a question, not a commitment to Route A."
+    },
+    {
+      "round": 4,
+      "session_id": "6b89fe58-3218-4e42-9f18-ebccf7c3dbf4",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not clearly indicate a specific route choice."
+    },
+    {
+      "round": 4,
+      "session_id": "76eb85f3-8623-425b-a3b4-c007a20e4e73",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route in their final statement."
+    },
+    {
+      "round": 4,
+      "session_id": "7b504058-0852-46dc-a86e-6af9b4f5689b",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not clearly indicate a specific route."
+    },
+    {
+      "round": 4,
+      "session_id": "899d1904-b45e-464a-87d9-7fb6961e2193",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly choose a route, leaving their preference ambiguous."
+    },
+    {
+      "round": 4,
+      "session_id": "90c65e0b-d6a9-4f29-9f1e-c1e2f7dbc191",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a preference and only compared routes without committing."
+    },
+    {
+      "round": 4,
+      "session_id": "9bb2246e-b2d1-4113-801d-b8090621a50f",
+      "stated_route": "C",
+      "chosen_route": "A",
+      "consistent": false,
+      "reasoning": "The commuter favored C but logged as A."
+    },
+    {
+      "round": 4,
+      "session_id": "aaed7a90-8bab-4c6e-95dd-a19024183389",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's last statement shows they will monitor Route B, indicating their intent to take it."
+    },
+    {
+      "round": 4,
+      "session_id": "aee31f4f-442a-4159-a48e-9c30e75910bf",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not clearly state a specific route in their final statement."
+    },
+    {
+      "round": 4,
+      "session_id": "af824aa3-375e-41a4-bdaf-7e2e34a26896",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route letter."
+    },
+    {
+      "round": 4,
+      "session_id": "b0a0792c-af73-4491-aab7-ab4247546df1",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route in their last message, but the logged final choice is Route A."
+    },
+    {
+      "round": 4,
+      "session_id": "b5d2dcc8-051b-4e72-8290-41dcc0d51fa7",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a preference for any specific route."
+    },
+    {
+      "round": 4,
+      "session_id": "c0e89a1e-6f38-4762-8df2-b5e9427ee5b4",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a specific route in their final statement."
+    },
+    {
+      "round": 4,
+      "session_id": "c1071c13-de9d-4ba7-8870-a6ee3ea07a47",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "Commuter explicitly stated preference for underutilized routes, aligning with Route C."
+    },
+    {
+      "round": 4,
+      "session_id": "cd86291a-f557-4e8a-af06-84092548fcf9",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states they will stick to their usual route C."
+    },
+    {
+      "round": 4,
+      "session_id": "cf757a23-45d0-44f7-891e-e35ec0a264f8",
+      "stated_route": "A",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter clearly stated preference for Route A, but the logged choice was B."
+    },
+    {
+      "round": 4,
+      "session_id": "fd3246c9-7ec9-40d4-81b7-6fc6ffb7eab2",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "Commuter explicitly stated they would stick with Route B."
+    },
+    {
+      "round": 5,
+      "session_id": "05207c06-cd34-4161-833e-b4146e933193",
+      "stated_route": "C",
+      "chosen_route": "A",
+      "consistent": false,
+      "reasoning": "The commuter stated they would stick with their usual path (Route C), but the logged choice was Route A."
+    },
+    {
+      "round": 5,
+      "session_id": "0fee7609-0a97-42a8-be32-3cd6d0bda492",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated they would take Route C."
+    },
+    {
+      "round": 5,
+      "session_id": "13d8537a-e806-42d3-a2c3-a3952be8ff08",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated their preference for familiarity with a route that worked well before, aligning with the logged choice of Route C."
+    },
+    {
+      "round": 5,
+      "session_id": "1883c478-5f54-4810-bcaf-a765c57b4123",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": false,
+      "reasoning": "The commuter did not explicitly state a route in their final statement."
+    },
+    {
+      "round": 5,
+      "session_id": "21260e94-209a-46c2-9976-87b1e4e0613d",
+      "stated_route": "unclear",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly commit to a specific route in their final statement."
+    },
+    {
+      "round": 5,
+      "session_id": "216d43a6-ee1c-4689-9962-8dc30f7363f5",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not explicitly commit to a specific route."
+    },
+    {
+      "round": 5,
+      "session_id": "289bafc4-07d8-441e-abdd-f099298d01ba",
+      "stated_route": "C",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter explicitly stated a preference for Route C based on past success and habit, yet the logged final choice was Route B."
+    },
+    {
+      "round": 5,
+      "session_id": "37fd6303-d009-4550-868c-42b68305d2f4",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter agreed with the advisor's suggestion of Route A in their final statement."
+    },
+    {
+      "round": 5,
+      "session_id": "3b4344f5-05a0-4e86-95e4-9e5614869b3d",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "Commuter agrees to try Route A based on time efficiency concerns."
+    },
+    {
+      "round": 5,
+      "session_id": "3cbec3ba-956b-441c-ac81-48ea4c8c3cd2",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter explicitly stated their intention to stick with route B."
+    },
+    {
+      "round": 5,
+      "session_id": "3d9ff0d0-fb3f-4273-af26-bc58e99f5fcb",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's final statement does not clearly indicate a specific route."
+    },
+    {
+      "round": 5,
+      "session_id": "50f96fb7-825b-4777-8e1f-0d8fbc90d177",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly commit to a specific route in their final statement."
+    },
+    {
+      "round": 5,
+      "session_id": "5c25806a-b448-4004-873e-f27acf536ea0",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states a preference for sticking with Route A."
+    },
+    {
+      "round": 5,
+      "session_id": "6b89fe58-3218-4e42-9f18-ebccf7c3dbf4",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states they will stick with their usual pattern, indicating Route B."
+    },
+    {
+      "round": 5,
+      "session_id": "76eb85f3-8623-425b-a3b4-c007a20e4e73",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "Commuter explicitly stated they will take Route C."
+    },
+    {
+      "round": 5,
+      "session_id": "7b504058-0852-46dc-a86e-6af9b4f5689b",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states they will take Route A."
+    },
+    {
+      "round": 5,
+      "session_id": "899d1904-b45e-464a-87d9-7fb6961e2193",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state their intention to take Route C."
+    },
+    {
+      "round": 5,
+      "session_id": "90c65e0b-d6a9-4f29-9f1e-c1e2f7dbc191",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "Commuter explicitly states they will go with Route A."
+    },
+    {
+      "round": 5,
+      "session_id": "9bb2246e-b2d1-4113-801d-b8090621a50f",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter's words do not clearly commit to a specific route."
+    },
+    {
+      "round": 5,
+      "session_id": "aaed7a90-8bab-4c6e-95dd-a19024183389",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter indicated leaning into historical patterns, aligning with Route C."
+    },
+    {
+      "round": 5,
+      "session_id": "aee31f4f-442a-4159-a48e-9c30e75910bf",
+      "stated_route": "C",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter explicitly chose Route C, but the log shows Route B."
+    },
+    {
+      "round": 5,
+      "session_id": "af824aa3-375e-41a4-bdaf-7e2e34a26896",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "Commuter explicitly chose 'B' in their last statement."
+    },
+    {
+      "round": 5,
+      "session_id": "b0a0792c-af73-4491-aab7-ab4247546df1",
+      "stated_route": "A",
+      "chosen_route": "A",
+      "consistent": true,
+      "reasoning": "The commuter explicitly states their intention to choose Route A."
+    },
+    {
+      "round": 5,
+      "session_id": "b5d2dcc8-051b-4e72-8290-41dcc0d51fa7",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": false,
+      "reasoning": "The commuter's final statement does not clearly specify a route, but they chose Route B, which contradicts the advisor's suggestion."
+    },
+    {
+      "round": 5,
+      "session_id": "c0e89a1e-6f38-4762-8df2-b5e9427ee5b4",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter explicitly chose Route C despite congestion."
+    },
+    {
+      "round": 5,
+      "session_id": "c1071c13-de9d-4ba7-8870-a6ee3ea07a47",
+      "stated_route": "B",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "Commuter explicitly states preference for B in their last clear statement."
+    },
+    {
+      "round": 5,
+      "session_id": "cd86291a-f557-4e8a-af06-84092548fcf9",
+      "stated_route": "unclear",
+      "chosen_route": "B",
+      "consistent": true,
+      "reasoning": "The commuter did not explicitly state a route choice in their final statement."
+    },
+    {
+      "round": 5,
+      "session_id": "cf757a23-45d0-44f7-891e-e35ec0a264f8",
+      "stated_route": "C",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "The commuter's last statement indicates sticking to their usual route, which matches the logged choice of Route C."
+    },
+    {
+      "round": 5,
+      "session_id": "fd3246c9-7ec9-40d4-81b7-6fc6ffb7eab2",
+      "stated_route": "unclear",
+      "chosen_route": "C",
+      "consistent": true,
+      "reasoning": "Commuter's last statement was checking past data without committing to a specific route."
+    }
+  ]
+}
