@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 // Checks whether a decision's stated reason (choice_reason) actually
-// matches the route that was logged (chosen_route) -- found via manual
-// inspection (2026-09) that a large fraction of "compliance-intent"
-// reasons ("Trusting AI advice...") are logged against a DIFFERENT route
-// than the one recommended, with no acknowledgment of the mismatch in the
-// text itself. That's a generation-coherence artifact in
-// decideFinalChoiceAfterPersuasion's single-call {route, reason} output,
-// not genuine persuasion failure or reasoned disagreement -- confirmed by
-// reading the actual reason text (it never explains *why* it's deviating,
-// it just restates "trusting the advisor" while picking something else).
+// matches the route it was reasoning ABOUT -- choice_reason is written
+// during Phase A (decideFinalChoiceAfterPersuasion, the opening-pitch
+// decision, logged as initial_choice), while chosen_route/final_choice
+// reflects whatever happens AFTER the separate Phase B switch decision
+// (decideSwitchLLM, with its own switch_reason field). So the correct
+// comparison is choice_reason vs initial_choice, NOT vs chosen_route --
+// comparing against chosen_route conflates "the reasoning doesn't match
+// the decision it was for" with "the player switched afterward", which
+// is a completely different (and totally legitimate) thing. An earlier
+// version of this script made exactly that mistake and reported a false
+// ~50-90% "incoherence rate" that was actually just the switch rate in
+// disguise (verified: 26/27 "incoherent" cases in one room were simply
+// switched decisions, only 1 was a genuine same-phase mismatch).
+//
 // Rule-based, offline -- no Ollama call needed, this is purely a text/
 // structured-data check on data that's already exported.
 //
@@ -38,9 +43,9 @@ function normalize(r) {
 function checkRoom(exportData) {
   const { room, round_logs: roundLogs } = exportData;
   let totalWithRec = 0;
-  let rawCompliant = 0;
+  let rawCompliant = 0; // compliance measured on chosen_route (final), the official metric
   let complianceIntentTotal = 0;
-  let complianceIntentIncoherent = 0;
+  let complianceIntentIncoherent = 0; // reason vs the phase-A route it was actually about (initial_choice)
   const incoherentDecisions = [];
 
   for (const row of roundLogs) {
@@ -51,15 +56,23 @@ function checkRoom(exportData) {
     if (compliant) rawCompliant++;
 
     const reason = row.choice_reason || "";
+    const initialChoice = normalize(row.initial_choice);
     if (COMPLIANCE_INTENT.test(reason)) {
       complianceIntentTotal++;
-      if (!compliant) {
+      // Compare against initial_choice (what Phase A actually decided,
+      // which is what choice_reason was written about) -- NOT
+      // chosen_route, which may reflect a later Phase B switch that
+      // choice_reason was never updated to describe.
+      const phaseACoherent = initialChoice === rec;
+      if (!phaseACoherent) {
         complianceIntentIncoherent++;
         incoherentDecisions.push({
           round: row.round,
           session_id: row.session_id,
           recommended: rec,
-          chosen: row.chosen_route,
+          initial_choice: row.initial_choice,
+          final_choice: row.final_choice,
+          switched: row.initial_choice !== row.final_choice,
           reason,
         });
       }
@@ -67,9 +80,10 @@ function checkRoom(exportData) {
   }
 
   const rawCompliancePct = totalWithRec ? Math.round((rawCompliant / totalWithRec) * 10000) / 100 : null;
-  // Corrected compliance: exclude incoherent decisions from BOTH
-  // numerator and denominator -- they're neither confirmed compliant nor
-  // confirmed non-compliant, the signal is just broken for these rows.
+  // Corrected compliance: exclude decisions where the Phase A reasoning
+  // genuinely contradicts the Phase A route (a real coherence problem),
+  // from both numerator and denominator of the FINAL compliance metric --
+  // these are the only "broken signal" rows now, not switches.
   const correctedDenominator = totalWithRec - complianceIntentIncoherent;
   const correctedCompliancePct = correctedDenominator
     ? Math.round((rawCompliant / correctedDenominator) * 10000) / 100
