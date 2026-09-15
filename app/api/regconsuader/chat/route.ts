@@ -3,7 +3,14 @@ import db from '@/lib/db'
 import { ollama } from '@/lib/agent/ollama'
 import { getRoomContext, getPlayerHistory } from '@/lib/agent/context'
 import { REGCONSUADER_SYSTEM_PROMPT, buildContextBlock, reactiveChatInstruction, type MetaStrategy } from '@/lib/agent/regconsuader/prompts'
+import { REGCONSUADER_SYSTEM_PROMPT_V2, reactiveChatInstructionV2 } from '@/lib/agent/regconsuader/prompts-v2'
 import { pickStrategyFromScorecard } from '@/lib/agent/regconsuader/strategy'
+
+// Same PROMPT_VERSION toggle as recommend.ts -- keep both endpoints on the
+// same version for a given run, since a mid-round switch between v1/v2
+// phrasing would confound the "richer prompt" comparison with a "the
+// advisor contradicted its own opening tone" artifact.
+const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
 
 // Separate endpoint from /api/agent/chat (PersuLLM-1) — see project memory
 // on keeping PersuLLM-1's own code path untouched.
@@ -52,9 +59,14 @@ export async function POST(req: NextRequest) {
       : []
 
     try {
+      const systemPrompt =
+        PROMPT_VERSION === 'v2'
+          ? `${REGCONSUADER_SYSTEM_PROMPT_V2}\n\n${reactiveChatInstructionV2(strategy)}`
+          : `${REGCONSUADER_SYSTEM_PROMPT}\n\n${reactiveChatInstruction(strategy)}`
+
       const reply = await ollama.chat(
         [
-          { role: 'system', content: `${REGCONSUADER_SYSTEM_PROMPT}\n\n${reactiveChatInstruction(strategy)}` },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: contextBlock },
           ...priorMessages,
           { role: 'user', content: message },

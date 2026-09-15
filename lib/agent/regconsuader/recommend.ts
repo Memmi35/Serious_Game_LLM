@@ -15,9 +15,20 @@ import {
   buildContextBlock,
   type MetaStrategy,
 } from './prompts'
+import { REGCONSUADER_SYSTEM_PROMPT_V2, RECOMMENDATION_INSTRUCTION_V2 } from './prompts-v2'
 import { pickStrategyFromScorecard } from './strategy'
 import { pickStrategyWithLLM } from './llm-selector'
 import { getMockRecommendation } from '@/lib/agent/mock'
+
+// Prompt-richness experiment toggle: PROMPT_VERSION=v2 swaps in the richer,
+// ELM-grounded opening-pitch prompt (lib/agent/regconsuader/prompts-v2.ts)
+// in place of the original. Defaults to v1 so existing rooms are unaffected
+// unless explicitly set -- same isolated-variable pattern as
+// REGCONSUADER_SELECTOR. Switch phase is intentionally not versioned here
+// (this project runs V3 without it).
+const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
+const ACTIVE_SYSTEM_PROMPT = PROMPT_VERSION === 'v2' ? REGCONSUADER_SYSTEM_PROMPT_V2 : REGCONSUADER_SYSTEM_PROMPT
+const ACTIVE_RECOMMENDATION_INSTRUCTION = PROMPT_VERSION === 'v2' ? RECOMMENDATION_INSTRUCTION_V2 : RECOMMENDATION_INSTRUCTION
 
 // Experiment A toggle: REGCONSUADER_SELECTOR=llm swaps the frozen-scorecard
 // lookup for the LLM-based per-player selector (llm-selector.ts). Defaults
@@ -102,10 +113,10 @@ export async function generateRegConSuaderRecommendation({
   try {
     const raw = await ollama.chat(
       [
-        { role: 'system', content: REGCONSUADER_SYSTEM_PROMPT },
+        { role: 'system', content: ACTIVE_SYSTEM_PROMPT },
         {
           role: 'user',
-          content: `${contextBlock}\n\n${STRATEGY_FRAMINGS[strategy]}\n\n${RECOMMENDATION_INSTRUCTION}`,
+          content: `${contextBlock}\n\n${STRATEGY_FRAMINGS[strategy]}\n\n${ACTIVE_RECOMMENDATION_INSTRUCTION}`,
         },
       ],
       { json: true, model: persuaderModel }

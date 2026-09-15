@@ -24,7 +24,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 function parseArgs(argv) {
-  const args = { baseUrl: "http://137.121.170.69:8901", condition: "baseline", engine: "rules", persuaderModel: null, agents: null, rounds: null };
+  const args = { baseUrl: "http://137.121.170.69:8901", condition: "baseline", engine: "rules", persuaderModel: null, agents: null, rounds: null, switchPhase: true };
   for (const arg of argv) {
     const [key, value] = arg.replace(/^--/, "").split("=");
     if (key === "base-url" && value) args.baseUrl = value.replace(/\/$/, "");
@@ -40,6 +40,13 @@ function parseArgs(argv) {
     // to a full ~90-minute run. Omit both for a real experiment.
     if (key === "agents" && value) args.agents = parseInt(value, 10);
     if (key === "rounds" && value) args.rounds = parseInt(value, 10);
+    // Defaults to on (matches every room run so far). Every metrics
+    // computation to date has only ever used first-choice data anyway (see
+    // project roadmap memory: switch phase adds no value and actively hurts
+    // gap-to-optimal/compliance) -- this flag lets a future run skip
+    // generating that unused phase B data entirely, cutting per-room
+    // runtime roughly in half on slow models like qwq:32b/deepseek-r1:32b.
+    if (key === "switch-phase" && value) args.switchPhase = value !== "off";
   }
   if (!["rules", "llm"].includes(args.engine)) {
     throw new Error(`--engine must be "rules" or "llm", got "${args.engine}"`);
@@ -79,7 +86,7 @@ async function callApi(baseUrl, method, endpoint, body) {
 }
 
 async function main() {
-  const { baseUrl, condition, engine, persuaderModel, agents, rounds } = parseArgs(process.argv.slice(2));
+  const { baseUrl, condition, engine, persuaderModel, agents, rounds, switchPhase } = parseArgs(process.argv.slice(2));
   const dbUrl = readDatabaseUrl();
   const pool = new Pool({ connectionString: dbUrl });
   const activePersonas = agents ? PERSONAS.slice(0, agents) : PERSONAS;
@@ -96,6 +103,7 @@ async function main() {
         : ""
     }`
   );
+  if (engine === "llm") console.log(`Switch phase: ${switchPhase ? "on" : "off"}`);
 
   // 1. Create room
   const createResult = await callApi(baseUrl, "POST", "/api/admin/create-room", {
@@ -273,7 +281,7 @@ async function main() {
     // mediation produced correlated herding (see PersuLLM_NoSwitchAdvisor
     // archive, room KLH6, for the unmediated baseline this is compared
     // against).
-    if (engine === "llm") {
+    if (engine === "llm" && switchPhase) {
       const switchPhaseStart = Date.now();
       console.log(`--- Round ${round} reflection/switch phase ---`);
       let switchCount = 0;

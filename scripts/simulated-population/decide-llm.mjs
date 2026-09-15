@@ -11,8 +11,18 @@
 // actually reachable — see scripts/bootstrap-container.sh.
 
 import { chat, USE_MOCK } from "./ollama-client.mjs";
-import { personaSystemPrompt, ROUTE_CHOICE_INSTRUCTION } from "./persona-prompt.mjs";
+import { personaSystemPrompt as personaSystemPromptV1, ROUTE_CHOICE_INSTRUCTION } from "./persona-prompt.mjs";
+import { personaSystemPromptV2 } from "./persona-prompt-v2.mjs";
+import { buildPersuadeeReplyPromptV2 } from "./decide-llm-v2-prompts.mjs";
 import { decideRoute, sampleDecisionLatency } from "./decide.mjs";
+
+// Prompt-richness experiment toggle: PROMPT_VERSION=v2 swaps in the richer,
+// ELM-grounded persona/reply prompts (persona-prompt-v2.mjs,
+// decide-llm-v2-prompts.mjs) in place of the originals. Defaults to v1 so
+// existing runs are unaffected unless explicitly set -- same env-var
+// pattern as AGENT_POPULATION_MODEL and REGCONSUADER_SELECTOR.
+const PROMPT_VERSION = process.env.PROMPT_VERSION === "v2" ? "v2" : "v1";
+const personaSystemPrompt = PROMPT_VERSION === "v2" ? personaSystemPromptV2 : personaSystemPromptV1;
 
 function buildUserPrompt(routesData, previousChoice, advisorRecommendation) {
   const routesText = Object.entries(routesData)
@@ -199,10 +209,12 @@ export async function generatePersuadeeReply(persona, persuaderMessage) {
   }
 
   try {
+    const replyPrompt =
+      PROMPT_VERSION === "v2" ? buildPersuadeeReplyPromptV2(persuaderMessage) : buildPersuadeeReplyPrompt(persuaderMessage);
     const raw = await chat(
       [
         { role: "system", content: personaSystemPrompt(persona) },
-        { role: "user", content: buildPersuadeeReplyPrompt(persuaderMessage) },
+        { role: "user", content: replyPrompt },
       ],
       { json: true }
     );
