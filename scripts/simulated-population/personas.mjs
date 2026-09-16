@@ -1,5 +1,9 @@
-// 30 simulated-population personas for Step 1 of the persuasion roadmap
-// (see migrations/02_add_simulation_agents.sql for the persisted shape).
+// 50 simulated-population personas (was 30) for Step 1 of the persuasion
+// roadmap (see migrations/02_add_simulation_agents.sql for the persisted
+// shape). Population size increased for a supervisor-requested "more, and
+// more varied" population; lib/scenarios.ts's route capacities are scaled
+// by the same 50/30 factor so per-agent congestion pressure stays
+// comparable to prior 30-agent rooms.
 //
 // Trait ranges below are hand-picked PLACEHOLDERS, not real calibration —
 // the roadmap calls for personas "calibrated from pilot human data", which
@@ -147,6 +151,11 @@ const FIRST_NAMES = [
   "Liam", "Fatima", "Noah", "Sofia", "Ravi", "Chloe", "Omar", "Grace",
   "Lucas", "Amara", "Ethan", "Nadia", "Mateo", "Ingrid", "Samuel", "Yuki",
   "Isabella", "Daniel", "Zainab", "Henry", "Layla", "Marcus",
+  // Added for the 30 -> 50 agent population-size increase, keeping the
+  // without-replacement, no-duplicate-name assignment valid at 50.
+  "Anaya", "Bruno", "Chiamaka", "Dmitri", "Elif", "Farid", "Giulia", "Hiro",
+  "Ines", "Jonas", "Kaya", "Luz", "Mei", "Nasrin", "Oleg", "Paloma",
+  "Quinn", "Rania", "Santiago", "Tanvir",
 ];
 
 const OCCUPATIONS_AND_STAKES = [
@@ -253,6 +262,101 @@ const ARCHETYPES = [
     softmaxTemperature: 6,
     commuteHabit: "indifferent",
   },
+  // Added for the 30 -> 50 agent population-diversity increase, each
+  // deliberately filling a trait combination the original 6 don't cover
+  // (see comment above each) rather than being a random extra sample.
+  {
+    id: "archetype_07",
+    label: "AI-Reliant Optimizer",
+    // Low risk aversion + very high trust + fast/decisive: none of the
+    // original 6 pair "leans hard on AI" with "in a hurry" -- Speed
+    // Maximizer has low trust (0.4), Cautious/Anxious have high risk
+    // aversion instead of speed focus.
+    riskAversion: 2,
+    delaySensitivity: 1.3,
+    trustInAdvice: 0.9,
+    decisionLatencyMean: 5,
+    decisionLatencySigma: 0.2,
+    routeStickiness: 0.5,
+    softmaxTemperature: 0.6,
+    commuteHabit: "time_optimizer",
+  },
+  {
+    id: "archetype_08",
+    label: "Self-Reliant Skeptic",
+    // High risk aversion like Cautious Commuter/Anxious Avoider, but near-
+    // zero trust (0.1 vs their 0.6-0.7) and high stickiness -- avoids risk
+    // by sticking to what they already know, not by taking advice.
+    riskAversion: 9,
+    delaySensitivity: 0.7,
+    trustInAdvice: 0.1,
+    decisionLatencyMean: 12,
+    decisionLatencySigma: 0.3,
+    routeStickiness: 6,
+    softmaxTemperature: 1.2,
+    commuteHabit: "risk_averse",
+  },
+  {
+    id: "archetype_09",
+    label: "Loyal Follower",
+    // Near-ceiling trust (0.95, above any existing archetype's max of 0.7)
+    // combined with real stickiness -- once persuaded, stays persuaded
+    // round to round instead of re-litigating each time.
+    riskAversion: 5,
+    delaySensitivity: 0.9,
+    trustInAdvice: 0.95,
+    decisionLatencyMean: 10,
+    decisionLatencySigma: 0.3,
+    routeStickiness: 5,
+    softmaxTemperature: 0.5,
+    commuteHabit: "balanced",
+  },
+  {
+    id: "archetype_10",
+    label: "Reckless Rusher",
+    // Near-zero risk aversion + max delay sensitivity + very high noise --
+    // chases speed impulsively regardless of congestion signals. Distinct
+    // from Impulsive Explorer, whose delay sensitivity is only mid (0.9).
+    riskAversion: 0.5,
+    delaySensitivity: 1.5,
+    trustInAdvice: 0.2,
+    decisionLatencyMean: 3,
+    decisionLatencySigma: 0.7,
+    routeStickiness: 0,
+    softmaxTemperature: 5.5,
+    commuteHabit: "explorer",
+  },
+  {
+    id: "archetype_11",
+    label: "Stubborn Patient Driver",
+    // Doesn't care about speed at all (min delay sensitivity, 0.5) but is
+    // still risk-averse and very sticky/distrustful -- avoids congestion
+    // for comfort, not urgency. Distinct from Creature of Habit (mid trust
+    // 0.5, mid delay sensitivity 0.8).
+    riskAversion: 8,
+    delaySensitivity: 0.5,
+    trustInAdvice: 0.15,
+    decisionLatencyMean: 18,
+    decisionLatencySigma: 0.3,
+    routeStickiness: 7,
+    softmaxTemperature: 0.6,
+    commuteHabit: "habitual",
+  },
+  {
+    id: "archetype_12",
+    label: "Average Commuter",
+    // Genuinely modal on every trait -- a reference "typical" persona. The
+    // original 6 were all deliberately distinctive extremes; this fills the
+    // middle of the trait space that a real population would also have.
+    riskAversion: 6,
+    delaySensitivity: 1.0,
+    trustInAdvice: 0.5,
+    decisionLatencyMean: 10,
+    decisionLatencySigma: 0.4,
+    routeStickiness: 3,
+    softmaxTemperature: 2.0,
+    commuteHabit: "balanced",
+  },
 ];
 
 function samplePersona(index) {
@@ -270,7 +374,7 @@ function samplePersona(index) {
   };
 }
 
-const TOTAL_AGENTS = 30;
+const TOTAL_AGENTS = 50; // was 30 -- see lib/scenarios.ts for the matching 50/30 capacity scaling
 const fillCount = TOTAL_AGENTS - ARCHETYPES.length;
 const sampled = Array.from({ length: fillCount }, (_, i) => samplePersona(i + ARCHETYPES.length + 1));
 

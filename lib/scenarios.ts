@@ -133,7 +133,8 @@ export const SCENARIOS: Scenario[] = [
     origin: "0-0",
     destination: "4-4",
     defaultFlow: 19, // was 15 — closer to defaultCapacity so the 30 agents' own load pushes ratios past 1 more readily
-    defaultCapacity: 22, // was 32 (tried 18: combined with the wider range this backfired like round 3's broad tightening did — reverted)
+    defaultCapacity: 37, // was 22 (tuned for 30 agents) — scaled by 50/30 for the population-size increase, so per-agent congestion pressure stays comparable rather than confounding "bigger/more varied population" with "same network, more overload"
+
     defaultFreeTime: 1.2,
     // Every edge randomized in [0.9, 1.6] (was [1.1, 1.3]) — round 1 has no
     // bottleneck/center/corridor override to create asymmetry between routes,
@@ -151,7 +152,7 @@ export const SCENARIOS: Scenario[] = [
     origin: "4-4",
     destination: "1-1",
     defaultFlow:  10,
-    defaultCapacity: 26, // was 38 — tightened for a 30-agent population
+    defaultCapacity: 43, // was 26 (tuned for 30 agents) — scaled by 50/30 for the population-size increase
     defaultFreeTime: 1.2,
     centerNodes: CENTER_NODES,
     centerFlow: 22, // was 25, then 32, then 38, then 27, then 23, then 20 — heavier downtown background load
@@ -167,16 +168,19 @@ export const SCENARIOS: Scenario[] = [
     origin: "1-1",
     destination: "3-3",
     defaultFlow: 15,
-    defaultCapacity: 23, // was 33 — tightened for a 30-agent population. (Tried 19: uniformly
-                          // tightening capacity squeezes actual AND optimal together and lowers
-                          // the % gap rather than raising it — reverted.)
+    defaultCapacity: 38, // was 23 (tuned for 30 agents, itself down from 33). Scaled by 50/30 for
+                          // the population-size increase. (Historical note: tightening capacity
+                          // uniformly squeezes actual AND optimal together and lowers the % gap
+                          // rather than raising it — reverted at the time; keep that in mind before
+                          // re-tuning this further.)
     defaultFreeTime: 1.2,
 
     bottleneckEdge: "2-3->3-3",
-    bottleneckCapacity: 16,   // was 27, then 20. Kept tight — this is the trap. (Tried 10: pushed it
-                              // below defaultFlow=15's own background traffic, so the edge is already
-                              // over its own capacity before any of the 30 agents pick it — that made
-                              // it look bad enough to lose its temptation and lowered the gap. Reverted.)
+    bottleneckCapacity: 27,   // was 16 (tuned for 30 agents, itself down from 27, then 20). Scaled by
+                              // 50/30 for the population-size increase, kept as the trap. (Historical
+                              // note: pushing it below defaultFlow's own background traffic makes the
+                              // edge over-capacity before any agent even picks it, which removes the
+                              // temptation and lowers the gap — reverted at the time.)
     bottleneckFreeTime: 1.3, // was 1.9, then 2.0, then 0.9, then 1.25, then 1.45, then 1.35, then 1.28. Previously the "bottleneck"
                               // was slower than every other approach into the
                               // destination, so it was never actually
@@ -207,7 +211,7 @@ export const SCENARIOS: Scenario[] = [
                               // brings it to a felt ~3.2% gap in the split
                               // case while keeping worst-case load (40
                               // players on one edge) at a sane BPR x6.4.
-    defaultCapacity: 16,     // was 22 (originally 25) — tightened further for a 30-agent population
+    defaultCapacity: 27,     // was 16 (tuned for 30 agents, itself down from 22, originally 25) — scaled by 50/30 for the population-size increase
     defaultFreeTime: 1.2,
     blockedEdges: [
       "1-1->2-1",
@@ -234,12 +238,13 @@ export const SCENARIOS: Scenario[] = [
     origin: "0-0",
     destination: "4-4",
     defaultFlow: 14,          // was 10
-    defaultCapacity: 18,      // was 24 (originally 20) — tightened for a 30-agent population
+    defaultCapacity: 30,      // was 18 (tuned for 30 agents, itself down from 24, originally 20) — scaled by 50/30 for the population-size increase
     defaultFreeTime: 1.2,
-    fastCapacity: 26,         // was 50 — at 50 the corridor never actually got
-                              // congested (max ratio ~0.9 with all 30 agents),
-                              // so the scenario's "risk of overcrowding it"
-                              // premise never landed. 26 makes overuse real.
+    fastCapacity: 43,         // was 26 (tuned for 30 agents; before that, 50 never actually got
+                              // congested -- max ratio ~0.9 with all 30 agents -- so the scenario's
+                              // "risk of overcrowding it" premise never landed). Scaled by 50/30 for
+                              // the population-size increase to keep that same real overuse risk at
+                              // 50 agents.
     fastFreeTime: 1.45,       // was 0.7 — at 0.7 (vs ~1.3-1.5 elsewhere) the
                               // corridor was such a dominant shortcut that
                               // every one of the top-3 shortest routes rode
