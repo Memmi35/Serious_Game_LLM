@@ -187,177 +187,47 @@ function buildNarrative(name, rngFn) {
   return { name, occupation, stake };
 }
 
-// A handful of named, interpretable archetypes to seed the population and
-// make later qualitative review easier.
-const ARCHETYPES = [
-  {
-    id: "archetype_01",
-    label: "Cautious Commuter",
-    riskAversion: 10,
-    delaySensitivity: 1.0,
-    trustInAdvice: 0.6,
-    decisionLatencyMean: 14,
-    decisionLatencySigma: 0.3,
-    routeStickiness: 3,
-    softmaxTemperature: 1.0,
-    commuteHabit: "risk_averse",
-  },
-  {
-    id: "archetype_02",
-    label: "Speed Maximizer",
-    riskAversion: 1,
-    delaySensitivity: 1.5,
-    trustInAdvice: 0.4,
-    decisionLatencyMean: 5,
-    decisionLatencySigma: 0.2,
-    routeStickiness: 0.5,
-    softmaxTemperature: 0.8,
-    commuteHabit: "time_optimizer",
-  },
-  {
-    id: "archetype_03",
-    label: "Creature of Habit",
-    riskAversion: 4,
-    delaySensitivity: 0.8,
-    trustInAdvice: 0.5,
-    decisionLatencyMean: 8,
-    decisionLatencySigma: 0.3,
-    routeStickiness: 7,
-    softmaxTemperature: 2.0,
-    commuteHabit: "habitual",
-  },
-  {
-    id: "archetype_04",
-    label: "Impulsive Explorer",
-    riskAversion: 2,
-    delaySensitivity: 0.9,
-    trustInAdvice: 0.3,
-    decisionLatencyMean: 4,
-    decisionLatencySigma: 0.6,
-    routeStickiness: 0.5,
-    softmaxTemperature: 5,
-    commuteHabit: "explorer",
-  },
-  {
-    id: "archetype_05",
-    label: "Anxious Avoider",
-    riskAversion: 12,
-    delaySensitivity: 0.6,
-    trustInAdvice: 0.7,
-    decisionLatencyMean: 20,
-    decisionLatencySigma: 0.4,
-    routeStickiness: 4,
-    softmaxTemperature: 0.7,
-    commuteHabit: "congestion_averse",
-  },
-  {
-    id: "archetype_06",
-    label: "Indifferent Rider",
-    riskAversion: 1.5,
-    delaySensitivity: 0.6,
-    trustInAdvice: 0.5,
-    decisionLatencyMean: 10,
-    decisionLatencySigma: 0.5,
-    routeStickiness: 1,
-    softmaxTemperature: 6,
-    commuteHabit: "indifferent",
-  },
-  // Added for the 30 -> 50 agent population-diversity increase, each
-  // deliberately filling a trait combination the original 6 don't cover
-  // (see comment above each) rather than being a random extra sample.
-  {
-    id: "archetype_07",
-    label: "AI-Reliant Optimizer",
-    // Low risk aversion + very high trust + fast/decisive: none of the
-    // original 6 pair "leans hard on AI" with "in a hurry" -- Speed
-    // Maximizer has low trust (0.4), Cautious/Anxious have high risk
-    // aversion instead of speed focus.
-    riskAversion: 2,
-    delaySensitivity: 1.3,
-    trustInAdvice: 0.9,
-    decisionLatencyMean: 5,
-    decisionLatencySigma: 0.2,
-    routeStickiness: 0.5,
-    softmaxTemperature: 0.6,
-    commuteHabit: "time_optimizer",
-  },
-  {
-    id: "archetype_08",
-    label: "Self-Reliant Skeptic",
-    // High risk aversion like Cautious Commuter/Anxious Avoider, but near-
-    // zero trust (0.1 vs their 0.6-0.7) and high stickiness -- avoids risk
-    // by sticking to what they already know, not by taking advice.
-    riskAversion: 9,
-    delaySensitivity: 0.7,
-    trustInAdvice: 0.1,
-    decisionLatencyMean: 12,
-    decisionLatencySigma: 0.3,
-    routeStickiness: 6,
-    softmaxTemperature: 1.2,
-    commuteHabit: "risk_averse",
-  },
-  {
-    id: "archetype_09",
-    label: "Loyal Follower",
-    // Near-ceiling trust (0.95, above any existing archetype's max of 0.7)
-    // combined with real stickiness -- once persuaded, stays persuaded
-    // round to round instead of re-litigating each time.
-    riskAversion: 5,
-    delaySensitivity: 0.9,
-    trustInAdvice: 0.95,
-    decisionLatencyMean: 10,
-    decisionLatencySigma: 0.3,
-    routeStickiness: 5,
-    softmaxTemperature: 0.5,
-    commuteHabit: "balanced",
-  },
-  {
-    id: "archetype_10",
-    label: "Reckless Rusher",
-    // Near-zero risk aversion + max delay sensitivity + very high noise --
-    // chases speed impulsively regardless of congestion signals. Distinct
-    // from Impulsive Explorer, whose delay sensitivity is only mid (0.9).
-    riskAversion: 0.5,
-    delaySensitivity: 1.5,
-    trustInAdvice: 0.2,
-    decisionLatencyMean: 3,
-    decisionLatencySigma: 0.7,
-    routeStickiness: 0,
-    softmaxTemperature: 5.5,
-    commuteHabit: "explorer",
-  },
-  {
-    id: "archetype_11",
-    label: "Stubborn Patient Driver",
-    // Doesn't care about speed at all (min delay sensitivity, 0.5) but is
-    // still risk-averse and very sticky/distrustful -- avoids congestion
-    // for comfort, not urgency. Distinct from Creature of Habit (mid trust
-    // 0.5, mid delay sensitivity 0.8).
-    riskAversion: 8,
-    delaySensitivity: 0.5,
-    trustInAdvice: 0.15,
-    decisionLatencyMean: 18,
-    decisionLatencySigma: 0.3,
-    routeStickiness: 7,
-    softmaxTemperature: 0.6,
-    commuteHabit: "habitual",
-  },
-  {
-    id: "archetype_12",
-    label: "Average Commuter",
-    // Genuinely modal on every trait -- a reference "typical" persona. The
-    // original 6 were all deliberately distinctive extremes; this fills the
-    // middle of the trait space that a real population would also have.
-    riskAversion: 6,
-    delaySensitivity: 1.0,
-    trustInAdvice: 0.5,
-    decisionLatencyMean: 10,
-    decisionLatencySigma: 0.4,
-    routeStickiness: 3,
-    softmaxTemperature: 2.0,
-    commuteHabit: "balanced",
-  },
-];
+// Named, interpretable archetypes to seed the population and make later
+// qualitative review easier. These are now derived DIRECTLY from SEGMENTS'
+// own anchor vectors above (riskAversion, trustInAdvice, routeStickiness,
+// softmaxTemperature, denormalized against SAMPLE_BOUNDS) instead of being a
+// separately hand-invented set -- so the named archetypes are literally
+// Anable (2005)'s 6 segments, not just narratively matched to them after
+// the fact. This replaced an earlier set of 12 ad hoc archetypes (6 hand-
+// picked + 6 added for the population-size increase) that had no direct
+// tie to the segmentation literature at all -- see git history if that
+// version is ever needed for comparison.
+//
+// The paper's segmentation doesn't cover delaySensitivity, decisionLatency-
+// Mean/Sigma, or commuteHabit, so those four are still our own placeholder
+// judgment calls, chosen to match each segment's qualitative blurb (e.g.
+// "Die Hard Driver... speed and control matter" -> high delaySensitivity,
+// fast decisionLatencyMean).
+// The 4 traits Anable (2005) doesn't cover, picked per-segment to match
+// each one's qualitative blurb above (not derived from the paper).
+const ARCHETYPE_EXTRA_TRAITS = {
+  "Malcontented Motorist": { delaySensitivity: 1.1, decisionLatencyMean: 12, decisionLatencySigma: 0.4, commuteHabit: "congestion_averse" }, // stressed by traffic, would switch given confidence
+  "Complacent Car Addict": { delaySensitivity: 0.7, decisionLatencyMean: 6, decisionLatencySigma: 0.3, commuteHabit: "habitual" }, // doesn't optimize, low-effort default choice
+  "Aspiring Environmentalist": { delaySensitivity: 1.3, decisionLatencyMean: 10, decisionLatencySigma: 0.3, commuteHabit: "balanced" }, // efficiency-focused, attentive to good advice
+  "Die Hard Driver": { delaySensitivity: 1.4, decisionLatencyMean: 5, decisionLatencySigma: 0.2, commuteHabit: "time_optimizer" }, // speed and control matter
+  "Car-less Crusader": { delaySensitivity: 1.1, decisionLatencyMean: 6, decisionLatencySigma: 0.2, commuteHabit: "explorer" }, // analytical, adjusts readily
+  "Reluctant Rider": { delaySensitivity: 0.8, decisionLatencyMean: 18, decisionLatencySigma: 0.4, commuteHabit: "risk_averse" }, // anxious, deliberates, leans on trusted advice
+};
+
+const ARCHETYPES = SEGMENTS.map((seg, i) => {
+  const [riskNorm, trustNorm, stickyNorm, tempNorm] = seg.anchor;
+  const denorm = (norm, [low, high]) => Math.round((low + norm * (high - low)) * 100) / 100;
+  return {
+    id: `archetype_${String(i + 1).padStart(2, "0")}`,
+    label: seg.name,
+    riskAversion: denorm(riskNorm, SAMPLE_BOUNDS.riskAversion),
+    trustInAdvice: denorm(trustNorm, SAMPLE_BOUNDS.trustInAdvice),
+    routeStickiness: denorm(stickyNorm, SAMPLE_BOUNDS.routeStickiness),
+    softmaxTemperature: denorm(tempNorm, SAMPLE_BOUNDS.softmaxTemperature),
+    // Placeholder judgment calls, not from the paper -- see comment above.
+    ...ARCHETYPE_EXTRA_TRAITS[seg.name],
+  };
+});
 
 function samplePersona(index) {
   return {
