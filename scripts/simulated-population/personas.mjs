@@ -121,24 +121,6 @@ const SEGMENTS = [
   },
 ];
 
-function normalize(value, [low, high]) {
-  return Math.min(1, Math.max(0, (value - low) / (high - low)));
-}
-
-function nearestSegment(persona) {
-  const vec = [
-    normalize(persona.riskAversion, SAMPLE_BOUNDS.riskAversion),
-    normalize(persona.trustInAdvice, SAMPLE_BOUNDS.trustInAdvice),
-    normalize(persona.routeStickiness, SAMPLE_BOUNDS.routeStickiness),
-    normalize(persona.softmaxTemperature, SAMPLE_BOUNDS.softmaxTemperature),
-  ];
-  let best = null;
-  for (const seg of SEGMENTS) {
-    const dist = Math.sqrt(vec.reduce((sum, v, i) => sum + (v - seg.anchor[i]) ** 2, 0));
-    if (!best || dist < best.dist) best = { seg, dist };
-  }
-  return best.seg;
-}
 
 // NHTS (National Household Travel Survey, FHWA)-informed grounding: average
 // US one-way commute is ~26 minutes, departures cluster 6:30-9:00am, and
@@ -226,27 +208,99 @@ const ARCHETYPES = SEGMENTS.map((seg, i) => {
     softmaxTemperature: denorm(tempNorm, SAMPLE_BOUNDS.softmaxTemperature),
     // Placeholder judgment calls, not from the paper -- see comment above.
     ...ARCHETYPE_EXTRA_TRAITS[seg.name],
+    _sampledSegment: seg.name,
   };
 });
 
-function samplePersona(index) {
+// Real population proportions from Anable (2005), Table 2 (p. 69) --
+// verified directly against the primary source text (not a secondary
+// citation). Supersedes an earlier "equitable trust" stratification that
+// forced trustInAdvice into a balanced 17/16/17 low/mid/high split per a
+// supervisor request: that conflicts with sampling to match these real
+// segment proportions, since trust is anchored per-segment in SEGMENTS
+// above and the two largest real-world segments (Complacent Car Addicts
+// 26%, Die Hard Drivers 19% -- 45% combined) are both low-trust. Decided
+// (explicit confirmation) to prioritize "this population matches a real,
+// published commuter segmentation" for the paper over the equitable-trust
+// request, since the former is now a verified, citable claim and the
+// latter was an internal request with no literature backing.
+const SEGMENT_SHARE_PCT = {
+  "Malcontented Motorist": 30,
+  "Complacent Car Addict": 26,
+  "Die Hard Driver": 19,
+  "Aspiring Environmentalist": 18,
+  "Car-less Crusader": 4,
+  "Reluctant Rider": 3,
+};
+
+// Largest-remainder rounding of SEGMENT_SHARE_PCT against totalAgents, so
+// the per-segment quota always sums exactly to totalAgents (e.g. 50 ->
+// 15/13/9/10/2/1 in SEGMENTS' own order) regardless of population size.
+function segmentQuota(totalAgents) {
+  const exact = SEGMENTS.map((s) => (SEGMENT_SHARE_PCT[s.name] / 100) * totalAgents);
+  const floors = exact.map(Math.floor);
+  const remaining = totalAgents - floors.reduce((a, b) => a + b, 0);
+  const remainders = exact.map((v, i) => ({ i, frac: v - floors[i] }));
+  remainders.sort((a, b) => b.frac - a.frac);
+  const quota = [...floors];
+  for (let k = 0; k < remaining; k++) quota[remainders[k].i] += 1;
+  const result = {};
+  SEGMENTS.forEach((s, i) => (result[s.name] = quota[i]));
+  return result;
+}
+
+// +/-15% jitter (of each trait's own bound range) around a segment's own
+// anchor/extra-trait value, so within-segment variants are recognizably
+// that segment's type (matching its real-world profile) rather than
+// independently random points later nearest-matched by coincidence.
+const JITTER = 0.15;
+
+function jitterNorm(anchorNorm, rngFn) {
+  return Math.min(1, Math.max(0, anchorNorm + (rngFn() * 2 - 1) * JITTER));
+}
+
+function jitterAbs(value, [low, high], rngFn) {
+  const range = high - low;
+  return Math.round(Math.min(high, Math.max(low, value + (rngFn() * 2 - 1) * JITTER * range)) * 100) / 100;
+}
+
+function sampleSegmentVariant(index, seg) {
+  const [riskNorm, trustNorm, stickyNorm, tempNorm] = seg.anchor;
+  const denorm = (norm, [low, high]) => Math.round((low + norm * (high - low)) * 100) / 100;
+  const extra = ARCHETYPE_EXTRA_TRAITS[seg.name];
   return {
     id: `config_${String(index).padStart(2, "0")}`,
     label: `Sim Agent ${index}`,
-    riskAversion: uniform(...SAMPLE_BOUNDS.riskAversion),
-    delaySensitivity: uniform(...SAMPLE_BOUNDS.delaySensitivity),
-    trustInAdvice: uniform(...SAMPLE_BOUNDS.trustInAdvice),
-    decisionLatencyMean: uniform(...SAMPLE_BOUNDS.decisionLatencyMean),
-    decisionLatencySigma: uniform(...SAMPLE_BOUNDS.decisionLatencySigma),
-    routeStickiness: uniform(...SAMPLE_BOUNDS.routeStickiness),
-    softmaxTemperature: uniform(...SAMPLE_BOUNDS.softmaxTemperature),
+    riskAversion: denorm(jitterNorm(riskNorm, rng), SAMPLE_BOUNDS.riskAversion),
+    trustInAdvice: denorm(jitterNorm(trustNorm, rng), SAMPLE_BOUNDS.trustInAdvice),
+    routeStickiness: denorm(jitterNorm(stickyNorm, rng), SAMPLE_BOUNDS.routeStickiness),
+    softmaxTemperature: denorm(jitterNorm(tempNorm, rng), SAMPLE_BOUNDS.softmaxTemperature),
+    delaySensitivity: jitterAbs(extra.delaySensitivity, SAMPLE_BOUNDS.delaySensitivity, rng),
+    decisionLatencyMean: jitterAbs(extra.decisionLatencyMean, SAMPLE_BOUNDS.decisionLatencyMean, rng),
+    decisionLatencySigma: jitterAbs(extra.decisionLatencySigma, SAMPLE_BOUNDS.decisionLatencySigma, rng),
     commuteHabit: pick(COMMUTE_HABITS),
+    // Tagged with the segment it was actually sampled for, rather than
+    // left to nearestSegment() to re-derive later -- jitter can push a
+    // variant's trait vector closer to a NEIGHBORING segment's anchor by
+    // chance (e.g. Aspiring Environmentalist and Car-less Crusader sit
+    // close together in trait space), which would otherwise silently
+    // drift the reported segment counts away from the real Anable (2005)
+    // quota and mismatch the persona's own narrative blurb against the
+    // segment it was actually drawn to represent.
+    _sampledSegment: seg.name,
   };
 }
 
 const TOTAL_AGENTS = 50; // was 30 -- see lib/scenarios.ts for the matching 50/30 capacity scaling
-const fillCount = TOTAL_AGENTS - ARCHETYPES.length;
-const sampled = Array.from({ length: fillCount }, (_, i) => samplePersona(i + ARCHETYPES.length + 1));
+const quota = segmentQuota(TOTAL_AGENTS);
+let variantIndex = ARCHETYPES.length + 1;
+const sampled = SEGMENTS.flatMap((seg) => {
+  const variantCount = quota[seg.name] - 1; // -1: the archetype itself already covers one slot
+  return Array.from({ length: Math.max(0, variantCount) }, () => sampleSegmentVariant(variantIndex++, seg));
+});
+if (ARCHETYPES.length + sampled.length !== TOTAL_AGENTS) {
+  throw new Error(`Segment quota mismatch: ${ARCHETYPES.length + sampled.length} personas built, expected ${TOTAL_AGENTS}`);
+}
 
 // Without-replacement name assignment (modulo guard only matters if
 // TOTAL_AGENTS ever exceeds FIRST_NAMES.length; today they're equal).
@@ -254,14 +308,19 @@ const shuffledNames = shuffle(FIRST_NAMES, rng);
 
 export const PERSONAS = [...ARCHETYPES, ...sampled].map((p, i) => {
   const { name, occupation, stake } = buildNarrative(shuffledNames[i % shuffledNames.length], rng);
+  // Use the segment this persona was actually sampled/quota-assigned for
+  // (_sampledSegment), not nearestSegment()'s independent re-derivation --
+  // see sampleSegmentVariant()'s comment for why those can disagree.
+  const seg = SEGMENTS.find((s) => s.name === p._sampledSegment);
+  const { _sampledSegment, ...rest } = p;
   return {
-    ...p,
+    ...rest,
     agentIndex: i + 1,
     llmBackend: "rule-based-v1",
     name,
     occupation,
     stake,
-    segment: nearestSegment(p).name,
-    segmentBlurb: nearestSegment(p).blurb,
+    segment: seg.name,
+    segmentBlurb: seg.blurb,
   };
 });
