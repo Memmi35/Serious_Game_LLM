@@ -189,13 +189,26 @@ async function main() {
       let dialogue = [];
       if (engine === "llm") {
         if (condition !== "baseline") {
-          // Persuasion dialogue: PersuLLM's opening pitch -> agent's reply ->
-          // PersuLLM's rebuttal -> agent's final decision, informed by the
+          // Persuasion dialogue: advisor's opening pitch -> agent's reply ->
+          // advisor's rebuttal -> agent's final decision, informed by the
           // whole transcript. Bounded to one rebuttal, not open-ended.
+          //
+          // BUG FIX: this used to call /api/agent/recommend and
+          // /api/agent/chat (PersuLLM-1's endpoints) unconditionally,
+          // regardless of `condition` -- so every condition=regconsuader
+          // room silently ran plain PersuLLM-1 instead of RegConSuader's
+          // LLM Strategy Selector. Confirmed via agent_recommendations:
+          // every room run through this bug had regconsuader_strategy
+          // NULL on 100% of rows, vs 100% populated on rooms that predate
+          // this script (created some other way). Route to the matching
+          // regconsuader endpoint pair when condition is regconsuader.
+          const recommendPath = condition === "regconsuader" ? "/api/regconsuader/recommend" : "/api/agent/recommend";
+          const chatPath = condition === "regconsuader" ? "/api/regconsuader/chat" : "/api/agent/chat";
+
           const rec = await callApi(
             baseUrl,
             "GET",
-            `/api/agent/recommend?sessionId=${session.sessionId}&roomId=${roomId}&round=${round}`
+            `${recommendPath}?sessionId=${session.sessionId}&roomId=${roomId}&round=${round}`
           );
 
           if (!rec.error && rec.route) {
@@ -205,7 +218,7 @@ async function main() {
             const agentReply = await generatePersuadeeReply(session.persona, openingMessage);
             dialogue.push({ speaker: "agent", text: agentReply.reply });
 
-            const chatRes = await callApi(baseUrl, "POST", "/api/agent/chat", {
+            const chatRes = await callApi(baseUrl, "POST", chatPath, {
               sessionId: session.sessionId,
               roomId,
               round,
@@ -293,7 +306,11 @@ async function main() {
 
         let switchDialogue = [];
         if (condition !== "baseline") {
-          const rec = await callApi(baseUrl, "POST", "/api/agent/switch-recommend", {
+          // Same regconsuader-routing fix as the phase A block above.
+          const switchRecommendPath = condition === "regconsuader" ? "/api/regconsuader/switch-recommend" : "/api/agent/switch-recommend";
+          const switchChatPath = condition === "regconsuader" ? "/api/regconsuader/chat" : "/api/agent/chat";
+
+          const rec = await callApi(baseUrl, "POST", switchRecommendPath, {
             sessionId: session.sessionId,
             roomId,
             round,
@@ -309,7 +326,7 @@ async function main() {
             const agentReply = await generatePersuadeeReply(session.persona, openingMessage);
             switchDialogue.push({ speaker: "agent", text: agentReply.reply });
 
-            const chatRes = await callApi(baseUrl, "POST", "/api/agent/chat", {
+            const chatRes = await callApi(baseUrl, "POST", switchChatPath, {
               sessionId: session.sessionId,
               roomId,
               round,
