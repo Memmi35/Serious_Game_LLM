@@ -46,8 +46,8 @@ tried to persuade this player in an earlier round and they didn't follow
 your advice, factor that into how you approach it this time -- repeating
 the same pitch that already failed is not persuasion.
 
-Richness and depth come from your REASONING, not from citing more numbers --
-see the CONSTRAINT below for exactly which numbers you may and may not use.
+Richness and depth come from your REASONING, not from piling on more
+numbers than the point actually needs.
 `
 
 // Strengthened after the QVOF/06E9 rooms showed V2's own TASK instruction
