@@ -107,19 +107,14 @@ const SEGMENTS = [
     blurb:
       "You know this network well and trust your own judgment over anyone else's. Speed and control matter to you; you're skeptical of advice that tells you what you'd have figured out yourself.",
   },
-  {
-    name: "Car-less Crusader",
-    anchor: [0.5, 0.7, 0.1, 0.2],
-    blurb:
-      "You're analytical about this commute — you actively compare options and adjust readily when a better one shows up. You're not sentimental about any particular route.",
-  },
-  {
-    name: "Reluctant Rider",
-    anchor: [0.9, 0.7, 0.5, 0.5],
-    blurb:
-      "Traffic makes you anxious, and you'd rather have reassurance than gamble. You lean on trusted advice when it's available because you'd rather not be the one who guessed wrong.",
-  },
 ];
+// Anable (2005) splits its 6 segments into 4 car-owning and 2 non-car-owning
+// (Car-less Crusader, Reluctant Rider -- explicitly people without regular
+// car access). This game is specifically about driving route choice, so
+// simulating a non-car-owning persona choosing between driving routes
+// contradicts their own profile. Dropped both; SEGMENT_SHARE_PCT below
+// renormalizes the remaining 4 segments' real proportions to sum to 100%
+// rather than inventing a replacement segment to fill the gap.
 
 
 // NHTS (National Household Travel Survey, FHWA)-informed grounding: average
@@ -192,8 +187,6 @@ const ARCHETYPE_EXTRA_TRAITS = {
   "Complacent Car Addict": { delaySensitivity: 0.7, decisionLatencyMean: 6, decisionLatencySigma: 0.3, commuteHabit: "habitual" }, // doesn't optimize, low-effort default choice
   "Aspiring Environmentalist": { delaySensitivity: 1.3, decisionLatencyMean: 10, decisionLatencySigma: 0.3, commuteHabit: "balanced" }, // efficiency-focused, attentive to good advice
   "Die Hard Driver": { delaySensitivity: 1.4, decisionLatencyMean: 5, decisionLatencySigma: 0.2, commuteHabit: "time_optimizer" }, // speed and control matter
-  "Car-less Crusader": { delaySensitivity: 1.1, decisionLatencyMean: 6, decisionLatencySigma: 0.2, commuteHabit: "explorer" }, // analytical, adjusts readily
-  "Reluctant Rider": { delaySensitivity: 0.8, decisionLatencyMean: 18, decisionLatencySigma: 0.4, commuteHabit: "risk_averse" }, // anxious, deliberates, leans on trusted advice
 };
 
 const ARCHETYPES = SEGMENTS.map((seg, i) => {
@@ -224,13 +217,16 @@ const ARCHETYPES = SEGMENTS.map((seg, i) => {
 // published commuter segmentation" for the paper over the equitable-trust
 // request, since the former is now a verified, citable claim and the
 // latter was an internal request with no literature backing.
+//
+// Renormalized to the 4 car-owning segments only (originally 30/26/19/18,
+// summing to 93% once the 2 non-car-owning segments were dropped -- see
+// SEGMENTS above) so the quota still sums to exactly 100%:
+//   30/93=32.26%, 26/93=27.96%, 19/93=20.43%, 18/93=19.35%
 const SEGMENT_SHARE_PCT = {
-  "Malcontented Motorist": 30,
-  "Complacent Car Addict": 26,
-  "Die Hard Driver": 19,
-  "Aspiring Environmentalist": 18,
-  "Car-less Crusader": 4,
-  "Reluctant Rider": 3,
+  "Malcontented Motorist": 32.26,
+  "Complacent Car Addict": 27.96,
+  "Die Hard Driver": 20.43,
+  "Aspiring Environmentalist": 19.35,
 };
 
 // Largest-remainder rounding of SEGMENT_SHARE_PCT against totalAgents, so
@@ -282,11 +278,11 @@ function sampleSegmentVariant(index, seg) {
     // Tagged with the segment it was actually sampled for, rather than
     // left to nearestSegment() to re-derive later -- jitter can push a
     // variant's trait vector closer to a NEIGHBORING segment's anchor by
-    // chance (e.g. Aspiring Environmentalist and Car-less Crusader sit
-    // close together in trait space), which would otherwise silently
-    // drift the reported segment counts away from the real Anable (2005)
-    // quota and mismatch the persona's own narrative blurb against the
-    // segment it was actually drawn to represent.
+    // chance when two segments sit close together in trait space, which
+    // would otherwise silently drift the reported segment counts away from
+    // the real Anable (2005) quota and mismatch the persona's own
+    // narrative blurb against the segment it was actually drawn to
+    // represent.
     _sampledSegment: seg.name,
   };
 }
