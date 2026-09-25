@@ -1,11 +1,32 @@
 import { ollama } from './ollama'
 import { getRoomContext, getPlayerHistory } from './context'
 import { systemPromptFor, buildContextBlock, RECOMMENDATION_INSTRUCTION, switchInstructionFor } from './prompts'
+import { CENTRAL_SYSTEM_PROMPT_V2, CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2, RECOMMENDATION_INSTRUCTION_V2 } from './prompts-v2'
 import { getMockRecommendation } from './mock'
 import db from '@/lib/db'
 
 // Set AGENT_MODE=ollama in .env.local once the model server is reachable.
 const USE_MOCK = process.env.AGENT_MODE !== 'ollama'
+
+// Ablation-study component toggle: structured (v2) vs unstructured (v1)
+// prompt -- one of three independent on/off switches on this same advisor
+// mechanism (the other two: numbers-suppression rule, strategy-selector
+// agent). Defaults to v1 so this file's behavior is unchanged unless
+// explicitly opted into v2. 'personal' condition has no v2 variant and
+// always stays on v1 regardless of this flag.
+const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
+
+function systemPromptForVersioned(condition: string): string {
+  if (PROMPT_VERSION === 'v2') {
+    if (condition === 'central_no_numbers') return CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2
+    if (condition === 'central') return CENTRAL_SYSTEM_PROMPT_V2
+  }
+  return systemPromptFor(condition)
+}
+
+function recommendationInstructionVersioned(): string {
+  return PROMPT_VERSION === 'v2' ? RECOMMENDATION_INSTRUCTION_V2 : RECOMMENDATION_INSTRUCTION
+}
 
 type Recommendation = {
   route: 'A' | 'B' | 'C'
@@ -49,8 +70,8 @@ async function callModel(
     const contextBlock = buildContextBlock(roomCtx, history, condition)
     const raw = await ollama.chat(
       [
-        { role: 'system', content: systemPromptFor(condition) },
-        { role: 'user', content: `${contextBlock}\n\n${RECOMMENDATION_INSTRUCTION}` },
+        { role: 'system', content: systemPromptForVersioned(condition) },
+        { role: 'user', content: `${contextBlock}\n\n${recommendationInstructionVersioned()}` },
       ],
       { json: true, model: persuaderModel }
     )
@@ -149,7 +170,7 @@ export async function generateSwitchRecommendation({
 
     const raw = await ollama.chat(
       [
-        { role: 'system', content: systemPromptFor(condition) },
+        { role: 'system', content: systemPromptForVersioned(condition) },
         { role: 'user', content: `${contextBlock}\n\n${switchContext}\n\n${switchInstructionFor(condition)}` },
       ],
       { json: true, model: persuaderModel }

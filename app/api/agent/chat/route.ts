@@ -3,9 +3,24 @@ import pool from '@/lib/db'
 import { ollama } from '@/lib/agent/ollama'
 import { getRoomContext, getPlayerHistory } from '@/lib/agent/context'
 import { systemPromptFor, buildContextBlock, chatInstructionFor } from '@/lib/agent/prompts'
+import { CENTRAL_SYSTEM_PROMPT_V2, CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2, PERSUADE_CHAT_INSTRUCTION_V2 } from '@/lib/agent/prompts-v2'
 
 // Set AGENT_MODE=ollama in .env.local once the model server is reachable.
 const USE_MOCK = process.env.AGENT_MODE !== 'ollama'
+
+// Same ablation-study component toggle as lib/agent/recommend.ts -- keep
+// both endpoints on the same prompt version for a given room, since a
+// mid-round switch between v1/v2 phrasing would confound the comparison
+// with a "the advisor contradicted its own opening tone" artifact.
+const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
+
+function versionedSystemAndChatInstruction(condition: string): string {
+  if (PROMPT_VERSION === 'v2' && (condition === 'central' || condition === 'central_no_numbers')) {
+    const system = condition === 'central_no_numbers' ? CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2 : CENTRAL_SYSTEM_PROMPT_V2
+    return `${system}\n\n${PERSUADE_CHAT_INSTRUCTION_V2}`
+  }
+  return `${systemPromptFor(condition)}\n\n${chatInstructionFor(condition)}`
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,7 +73,7 @@ export async function POST(req: NextRequest) {
 
       const reply = await ollama.chat(
         [
-          { role: 'system', content: `${systemPromptFor(condition)}\n\n${chatInstructionFor(condition)}` },
+          { role: 'system', content: versionedSystemAndChatInstruction(condition) },
           { role: 'user', content: contextBlock },
           ...priorMessages,
           { role: 'user', content: message },
