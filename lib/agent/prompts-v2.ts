@@ -92,9 +92,32 @@ recommend and how strongly to push it -- you just must never speak the
 actual numbers out loud.
 `
 
+// Two variants each below: the "_OPEN" ones for the numbers-ALLOWED ablation
+// component (CENTRAL_SYSTEM_PROMPT_V2, no CONSTRAINT section present), and
+// the plain-named ones for the numbers-SUPPRESSED component
+// (CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2, which does have a CONSTRAINT
+// section). Originally there was only one variant that referenced "the
+// CONSTRAINT above" unconditionally -- caught before the V2 (structured,
+// numbers-allowed) ablation pilot ran, since that condition has no
+// CONSTRAINT section at all, so the instruction would have dangled and
+// likely suppressed numbers anyway, defeating the point of isolating the
+// structured-prompt component from the suppression component.
+export const RECOMMENDATION_INSTRUCTION_V2_OPEN = `
+Respond with ONLY a JSON object, no other text, in this exact shape:
+{"route": "A" | "B" | "C", "explanation": "2-4 sentences building a real case grounded in the numbers above -- not a one-line verdict"}
+`
+
 export const RECOMMENDATION_INSTRUCTION_V2 = `
 Respond with ONLY a JSON object, no other text, in this exact shape:
 {"route": "A" | "B" | "C", "explanation": "2-4 sentences building a real case grounded in route travel times and this player's own history -- never player counts or distribution figures, per the CONSTRAINT above"}
+`
+
+export const PERSUADE_CHAT_INSTRUCTION_V2_OPEN = `
+Continue persuading the player toward the system-optimal route in 3-6
+sentences, building an actual argument rather than asserting a conclusion.
+Respond to whatever preference or concern they just raised -- don't repeat
+your opening pitch verbatim. If they've given a real reason to prefer a
+different route, engage with it honestly rather than dismissing it.
 `
 
 export const PERSUADE_CHAT_INSTRUCTION_V2 = `

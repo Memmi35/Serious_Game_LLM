@@ -1,7 +1,12 @@
 import { ollama } from './ollama'
 import { getRoomContext, getPlayerHistory } from './context'
 import { systemPromptFor, buildContextBlock, RECOMMENDATION_INSTRUCTION, switchInstructionFor } from './prompts'
-import { CENTRAL_SYSTEM_PROMPT_V2, CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2, RECOMMENDATION_INSTRUCTION_V2 } from './prompts-v2'
+import {
+  CENTRAL_SYSTEM_PROMPT_V2,
+  CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2,
+  RECOMMENDATION_INSTRUCTION_V2,
+  RECOMMENDATION_INSTRUCTION_V2_OPEN,
+} from './prompts-v2'
 import { getMockRecommendation } from './mock'
 import db from '@/lib/db'
 
@@ -24,8 +29,9 @@ function systemPromptForVersioned(condition: string): string {
   return systemPromptFor(condition)
 }
 
-function recommendationInstructionVersioned(): string {
-  return PROMPT_VERSION === 'v2' ? RECOMMENDATION_INSTRUCTION_V2 : RECOMMENDATION_INSTRUCTION
+function recommendationInstructionVersioned(condition: string): string {
+  if (PROMPT_VERSION !== 'v2') return RECOMMENDATION_INSTRUCTION
+  return condition === 'central_no_numbers' ? RECOMMENDATION_INSTRUCTION_V2 : RECOMMENDATION_INSTRUCTION_V2_OPEN
 }
 
 type Recommendation = {
@@ -71,7 +77,7 @@ async function callModel(
     const raw = await ollama.chat(
       [
         { role: 'system', content: systemPromptForVersioned(condition) },
-        { role: 'user', content: `${contextBlock}\n\n${recommendationInstructionVersioned()}` },
+        { role: 'user', content: `${contextBlock}\n\n${recommendationInstructionVersioned(condition)}` },
       ],
       { json: true, model: persuaderModel }
     )
