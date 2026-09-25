@@ -1,7 +1,6 @@
 | Room | Model | Condition | Avg gap % | Avg delay (s) | Compliance % | Switch rate % | ms/decision | Fallback signatures | Live-dist. ref. % |
 |---|---|---|---|---|---|---|---|---|---|
-| KLH6 | deepseek-r1:32b | central | 20.32 | 534.01 | 30.67 | 99.33 | 35324 | 0 | 65.33 |
-| 37V2 | deepseek-r1:32b | central | 1.26 | 422.72 | 33.33 | 72.67 | 66939 | 1 | 57.5 |
-| G6OS | qwen2.5:32b | central | 2.14 | 429.56 | 25.33 | 77.33 | 17869 | 0 | 42 |
-| 72Y6 | qwq:32b | central | 2.64 | 432.86 | 38.67 | 66 | 102857 | 11 | 56.67 |
-| 61ZO | qwen2.5:7b | central | 8.95 | 472.9 | 20.67 | 78.67 | 13087 | 0 | 63 |
+| 85ZQ | qwen2.5:32b | regconsuader | 4.27 | 443.97 | 52.67 | 22.67 | 23247 | 0 | 0 |
+| RAPS | qwen2.5:7b | regconsuader | 6.09 | 460.37 | 34 | 36 | 14377 | 0 | 21.67 |
+| 2PQ2 | deepseek-r1:32b | regconsuader | 3.71 | 440.84 | 55.33 | 18.67 | 125573 | 2 | 2 |
+| 673N | qwq:32b | regconsuader | 1.86 | 421.38 | 57.33 | 17.33 | 166085 | 36 | 1.5 |

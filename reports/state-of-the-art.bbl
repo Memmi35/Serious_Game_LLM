@@ -1,0 +1,110 @@
+\begin{thebibliography}{16}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Wardrop(1952)]{wardrop1952}
+J.~G. Wardrop.
+\newblock Some theoretical aspects of road traffic research.
+\newblock \emph{Proceedings of the Institution of Civil Engineers, Part II},
+  1\penalty0 (36):\penalty0 325--378, 1952.
+\newblock \doi{10.1680/ipeds.1952.11259}.
+
+\bibitem[Sheffi(1985)]{sheffi1985}
+Yosef Sheffi.
+\newblock \emph{Urban Transportation Networks: Equilibrium Analysis with
+  Mathematical Programming Methods}.
+\newblock Prentice-Hall, Englewood Cliffs, NJ, 1985.
+
+\bibitem[Ben-Akiva and Bierlaire(1999)]{benakiva1999}
+Moshe Ben-Akiva and Michel Bierlaire.
+\newblock Discrete choice methods and their applications to short-term travel
+  decisions.
+\newblock In Randolph~W. Hall, editor, \emph{Handbook of Transportation
+  Science}, pages 5--33. Springer, Boston, MA, 1999.
+\newblock \doi{10.1007/0-387-22650-X_2}.
+
+\bibitem[Vlahogianni et~al.(2014)Vlahogianni, Karlaftis, and
+  Golias]{vlahogianni2014}
+Eleni~I. Vlahogianni, Matthew~G. Karlaftis, and John~C. Golias.
+\newblock Short-term traffic forecasting: Where we are and where we're going.
+\newblock \emph{Transportation Research Part C: Emerging Technologies},
+  43:\penalty0 3--19, 2014.
+\newblock \doi{10.1016/j.trc.2014.01.005}.
+
+\bibitem[Lv et~al.(2015)Lv, Duan, Kang, Li, and Wang]{lv2015}
+Yisheng Lv, Yanjie Duan, Wenwen Kang, Zhengxi Li, and Fei-Yue Wang.
+\newblock Traffic flow prediction with big data: A deep learning approach.
+\newblock \emph{IEEE Transactions on Intelligent Transportation Systems},
+  16\penalty0 (2):\penalty0 865--873, 2015.
+\newblock \doi{10.1109/TITS.2014.2345663}.
+
+\bibitem[Abt(1970)]{abt1970}
+Clark~C. Abt.
+\newblock \emph{Serious Games}.
+\newblock Viking Press, New York, 1970.
+
+\bibitem[Michael and Chen(2005)]{michaelchen2005}
+David Michael and Sande Chen.
+\newblock \emph{Serious Games: Games That Educate, Train, and Inform}.
+\newblock Thomson Course Technology, Boston, MA, 2005.
+
+\bibitem[Rahwan et~al.(2019)]{rahwan2019}
+Iyad Rahwan et~al.
+\newblock Machine behaviour.
+\newblock \emph{Nature}, 568\penalty0 (7753):\penalty0 477--486, 2019.
+\newblock \doi{10.1038/s41586-019-1138-y}.
+
+\bibitem[Ma et~al.(2025)Ma, Chen, et~al.]{ma2025deliberation}
+Shuai Ma, Qiaoyi Chen, et~al.
+\newblock Towards human-ai deliberation: Design and evaluation of llm-empowered
+  deliberative ai for ai-assisted decision-making.
+\newblock In \emph{Proceedings of the 2025 CHI Conference on Human Factors in
+  Computing Systems}, pages 1--23, 2025.
+
+\bibitem[Wang et~al.(2025)Wang, Jiang, Hu, He, Yin, and Lee]{wang2025comparing}
+Linghao Wang, Zheyuan Jiang, Chenke Hu, Guibing He, Yafeng Yin, and Der-Horng
+  Lee.
+\newblock Comparing ai and human decision-making mechanisms in daily
+  collaborative experiments.
+\newblock \emph{iScience}, 28\penalty0 (6), 2025.
+
+\bibitem[Yao et~al.(2023)Yao, Zhao, Yu, Du, Shafran, Narasimhan, and
+  Cao]{yao2023react}
+Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan,
+  and Yuan Cao.
+\newblock React: Synergizing reasoning and acting in language models.
+\newblock In \emph{Proceedings of the International Conference on Learning
+  Representations (ICLR)}, 2023.
+
+\bibitem[Wang et~al.(2024)Wang, Duan, He, Lyu, Chen, Zheng, Yao, and
+  Ma]{wang2024agentic}
+Leizhen Wang, Peibo Duan, Zhengbing He, Cheng Lyu, Xin Chen, Nan Zheng, Li~Yao,
+  and Zhenliang Ma.
+\newblock Agentic large language models for day-to-day route choices.
+\newblock 2024.
+
+\bibitem[Afridi et~al.(2024)Afridi, Yasar, and Sheltami]{afridi2024serendipity}
+Ahmad~Hassan Afridi, Ansar Ul~Haque Yasar, and Tarek~R. Sheltami.
+\newblock Serendipity and llm-based recommender system for smart
+  transportation.
+\newblock 2024.
+
+\bibitem[Cialdini(2021)]{cialdini2021}
+Robert~B. Cialdini.
+\newblock \emph{Influence: The Psychology of Persuasion}.
+\newblock Harper Business, new and expanded edition, 2021.
+
+\bibitem[Zhang et~al.(2024)Zhang, Zhuang, Zhang, Gao, and Zhou]{zhang2024ma2p}
+Dingyi Zhang, Ziqing Zhuang, Linhai Zhang, Ziyang Gao, and Deyu Zhou.
+\newblock Ma2p: A meta-cognitive autonomous intelligent agents framework for
+  complex persuasion.
+\newblock 2024.
+
+\bibitem[LeCun(2022)]{lecun2022}
+Yann LeCun.
+\newblock A path towards autonomous machine intelligence, 2022.
+
+\end{thebibliography}

@@ -1,0 +1,217 @@
+{
+  "room_id": "RAPS",
+  "agent_condition": "regconsuader",
+  "persuader_model": "qwen2.5:7b",
+  "total_rounds": 5,
+  "agent_count": 30,
+  "traffic": {
+    "perRound": [
+      {
+        "round": 1,
+        "n": 30,
+        "actual": {
+          "counts": {
+            "Route A": 10,
+            "Route B": 10,
+            "Route C": 10
+          },
+          "totalCost": 889.43,
+          "avgCost": 29.65
+        },
+        "totalDelay": 634.43,
+        "optimal": {
+          "counts": {
+            "Route A": 0,
+            "Route B": 15,
+            "Route C": 15
+          },
+          "totalCost": 860.5,
+          "avgCost": 28.68
+        },
+        "congestedEdges": 4,
+        "congestionRatios": {
+          "0-0->0-1": 2.23,
+          "0-1->0-2": 2.23,
+          "0-2->0-3": 1.77,
+          "0-3->1-3": 1.77,
+          "1-3->1-4": 1.77,
+          "1-4->2-4": 1.77,
+          "2-4->3-4": 2.23,
+          "3-4->4-4": 2.23,
+          "0-2->1-2": 1.32,
+          "1-2->1-3": 1.32,
+          "1-3->2-3": 1.32,
+          "2-3->2-4": 1.32
+        }
+      },
+      {
+        "round": 2,
+        "n": 30,
+        "actual": {
+          "counts": {
+            "Route A": 13,
+            "Route B": 8,
+            "Route C": 9
+          },
+          "totalCost": 391.91,
+          "avgCost": 13.06
+        },
+        "totalDelay": 127.89,
+        "optimal": {
+          "counts": {
+            "Route A": 11,
+            "Route B": 5,
+            "Route C": 14
+          },
+          "totalCost": 365.63,
+          "avgCost": 12.19
+        },
+        "congestedEdges": 0,
+        "congestionRatios": {
+          "4-4->3-4": 1.19,
+          "3-4->2-4": 1.19,
+          "2-4->1-4": 0.88,
+          "1-4->1-3": 1.35,
+          "1-3->1-2": 1.65,
+          "1-2->1-1": 1.65,
+          "2-4->2-3": 1.15,
+          "2-3->1-3": 1.15,
+          "4-4->4-3": 0.73,
+          "4-3->4-2": 0.73,
+          "4-2->4-1": 0.73,
+          "4-1->3-1": 1.19,
+          "3-1->2-1": 1.19,
+          "2-1->1-1": 1.19
+        }
+      },
+      {
+        "round": 3,
+        "n": 30,
+        "actual": {
+          "counts": {
+            "Route A": 11,
+            "Route B": 9,
+            "Route C": 10
+          },
+          "totalCost": 339.97,
+          "avgCost": 11.33
+        },
+        "totalDelay": 195.12,
+        "optimal": {
+          "counts": {
+            "Route A": 13,
+            "Route B": 0,
+            "Route C": 17
+          },
+          "totalCost": 292.28,
+          "avgCost": 9.74
+        },
+        "congestedEdges": 1,
+        "congestionRatios": {
+          "1-1->1-2": 1.96,
+          "1-2->1-3": 1.13,
+          "1-3->2-3": 1.13,
+          "2-3->3-3": 2.19,
+          "1-2->2-2": 1.48,
+          "2-2->2-3": 1.04,
+          "2-2->3-2": 1.09,
+          "3-2->3-3": 1.09
+        }
+      },
+      {
+        "round": 4,
+        "n": 30,
+        "actual": {
+          "counts": {
+            "Route A": 9,
+            "Route B": 12,
+            "Route C": 9
+          },
+          "totalCost": 784.46,
+          "avgCost": 26.15
+        },
+        "totalDelay": 580.79,
+        "optimal": {
+          "counts": {
+            "Route A": 3,
+            "Route B": 14,
+            "Route C": 13
+          },
+          "totalCost": 748.41,
+          "avgCost": 24.95
+        },
+        "congestedEdges": 2,
+        "congestionRatios": {
+          "3-3->3-2": 2,
+          "3-2->2-2": 2,
+          "2-2->1-2": 2,
+          "1-2->0-2": 1.44,
+          "0-2->0-1": 2.19,
+          "0-1->0-0": 2.75,
+          "3-3->2-3": 1.63,
+          "2-3->1-3": 1.63,
+          "1-3->0-3": 1.63,
+          "0-3->0-2": 1.63,
+          "1-2->1-1": 1.44,
+          "1-1->0-1": 1.44
+        }
+      },
+      {
+        "round": 5,
+        "n": 30,
+        "actual": {
+          "counts": {
+            "Route A": 9,
+            "Route B": 11,
+            "Route C": 10
+          },
+          "totalCost": 1076.35,
+          "avgCost": 35.88
+        },
+        "totalDelay": 747.87,
+        "optimal": {
+          "counts": {
+            "Route A": 0,
+            "Route B": 16,
+            "Route C": 14
+          },
+          "totalCost": 1012.04,
+          "avgCost": 33.73
+        },
+        "congestedEdges": 2,
+        "congestionRatios": {
+          "0-0->0-1": 2.44,
+          "0-1->0-2": 2.44,
+          "0-2->0-3": 1.89,
+          "0-3->1-3": 1.89,
+          "1-3->2-3": 1.83,
+          "2-3->2-4": 1.83,
+          "2-4->3-4": 1.69,
+          "3-4->4-4": 1.69,
+          "1-3->1-4": 1.39,
+          "1-4->2-4": 0.96,
+          "0-2->1-2": 1.33,
+          "1-2->1-3": 1.33
+        }
+      }
+    ],
+    "pooledTotalTravelTime": 3482.13,
+    "pooledTotalDelay": 2286.11,
+    "pooledOptimalTravelTime": 3278.86,
+    "congestedEdges": 9,
+    "roundsWithOptimal": 5,
+    "gapToOptimalPct": 5.84
+  },
+  "compliance": {
+    "successRatePct": 54,
+    "decisionsWithRecommendation": 150,
+    "decisionsMissingRecommendation": 0,
+    "byRound": {
+      "1": 50,
+      "2": 46.67,
+      "3": 43.33,
+      "4": 63.33,
+      "5": 66.67
+    }
+  }
+}

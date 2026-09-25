@@ -1,0 +1,88 @@
+{
+  "room_id": "06E9",
+  "agent_condition": "regconsuader",
+  "total_rounds": 5,
+  "total_decisions": 150,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 4,
+      "Route B": 14,
+      "Route C": 12
+    },
+    "2": {
+      "Route A": 11,
+      "Route B": 6,
+      "Route C": 13
+    },
+    "3": {
+      "Route A": 13,
+      "Route B": 2,
+      "Route C": 15
+    },
+    "4": {
+      "Route A": 6,
+      "Route B": 16,
+      "Route C": 8
+    },
+    "5": {
+      "Route A": 1,
+      "Route B": 19,
+      "Route C": 10
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 13.491333333333333,
+      "min": 2.71,
+      "max": 37.75
+    },
+    "2": {
+      "mean": 12.414333333333332,
+      "min": 2.91,
+      "max": 27.17
+    },
+    "3": {
+      "mean": 13.331666666666669,
+      "min": 1.36,
+      "max": 50.39
+    },
+    "4": {
+      "mean": 12.762666666666668,
+      "min": 1.94,
+      "max": 39.77
+    },
+    "5": {
+      "mean": 15.137000000000002,
+      "min": 3,
+      "max": 56.47
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 150,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 18,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Balanced system efficiency over AI trust"
+      },
+      {
+        "round": 1,
+        "reason": "Preferred habit despite AI suggestion"
+      },
+      {
+        "round": 1,
+        "reason": "Follow AI recommendation to prevent congestion later."
+      },
+      {
+        "round": 1,
+        "reason": "Balances comfort and efficiency with AI's recommendation"
+      },
+      {
+        "round": 1,
+        "reason": "Balances AI recommendation with personal time pressure"
+      }
+    ]
+  }
+}

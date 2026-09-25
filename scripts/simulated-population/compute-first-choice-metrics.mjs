@@ -62,10 +62,24 @@ function round2(x) {
   return x == null || Number.isNaN(x) ? null : Math.round(x * 100) / 100;
 }
 
-function buildRouteEdgeSets(roundRows, field) {
+// IMPORTANT: route_edges on a round_log row always describes that row's
+// chosen_route (the route actually submitted), never initial_choice -- so
+// topology lookup must always key off chosen_route, regardless of which
+// field (initial_choice vs chosen_route) the caller is tallying counts
+// with. An earlier version of this function accepted a `field` param and
+// keyed the lookup off it directly; on any room with the switch phase on,
+// a row with initial_choice=A but chosen_route=C (switched) would then get
+// its route_edges (which describe C's topology) misattributed to Route A,
+// corrupting every downstream cost/optimal computation for that round.
+// Caught via a real discrepancy: round 3's optimal split looked different
+// across four rooms that in fact share byte-identical topology (verified
+// path/freeTime/capacity/baseFlow) -- only initial_choice/chosen_route
+// divergence on switched rows could explain that, since this function was
+// the only place initial_choice was used to key a route_edges lookup.
+function buildRouteEdgeSets(roundRows) {
   const byRoute = {};
   for (const name of ROUTE_NAMES) {
-    const row = roundRows.find((r) => normalizeRoute(r[field]) === name && r.route_edges);
+    const row = roundRows.find((r) => normalizeRoute(r.chosen_route) === name && r.route_edges);
     if (!row) continue;
     byRoute[name] = row.route_edges.map((e) => ({
       key: `${e.from}->${e.to}`,
@@ -80,9 +94,9 @@ function buildRouteEdgeSets(roundRows, field) {
 }
 
 // Builds { round -> { "Route A": edges, ... } } from a reference room's own
-// exported data, regardless of which field that room's rows happen to
-// cover each route on -- used only to backfill a missing route's topology,
-// never its choices.
+// exported data -- used only to backfill a missing route's topology when
+// this room itself has zero chosen_route coverage on some route that
+// round, never its choices.
 function buildTopologyCache(exportData) {
   const { round_logs: roundLogs } = exportData;
   const byRound = new Map();
@@ -92,9 +106,7 @@ function buildTopologyCache(exportData) {
   }
   const cache = {};
   for (const [round, rows] of byRound) {
-    const initial = buildRouteEdgeSets(rows, "initial_choice");
-    const final = buildRouteEdgeSets(rows, "chosen_route");
-    cache[round] = { ...final, ...initial }; // prefer initial_choice coverage when both exist
+    cache[round] = buildRouteEdgeSets(rows);
   }
   return cache;
 }
@@ -125,7 +137,7 @@ function computeTrafficMetrics(roundLogs, topologyCache) {
       if (choice) actualCounts[choice] = (actualCounts[choice] || 0) + 1;
     }
 
-    let routeEdgeSets = buildRouteEdgeSets(rows, "initial_choice");
+    let routeEdgeSets = buildRouteEdgeSets(rows);
     const missingRoutes = ROUTE_NAMES.filter((name) => !routeEdgeSets[name]);
     if (missingRoutes.length > 0 && topologyCache && topologyCache[round]) {
       routeEdgeSets = { ...topologyCache[round], ...routeEdgeSets };

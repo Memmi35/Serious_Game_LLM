@@ -1,0 +1,88 @@
+{
+  "room_id": "QVOF",
+  "agent_condition": "regconsuader",
+  "total_rounds": 5,
+  "total_decisions": 150,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 1,
+      "Route B": 15,
+      "Route C": 14
+    },
+    "2": {
+      "Route A": 11,
+      "Route B": 5,
+      "Route C": 14
+    },
+    "3": {
+      "Route A": 12,
+      "Route B": 2,
+      "Route C": 16
+    },
+    "4": {
+      "Route A": 3,
+      "Route B": 14,
+      "Route C": 13
+    },
+    "5": {
+      "Route A": 0,
+      "Route B": 15,
+      "Route C": 15
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 12.970666666666665,
+      "min": 1.82,
+      "max": 37.13
+    },
+    "2": {
+      "mean": 17.762,
+      "min": 3.72,
+      "max": 60
+    },
+    "3": {
+      "mean": 12.687666666666665,
+      "min": 3.46,
+      "max": 38.47
+    },
+    "4": {
+      "mean": 13.003000000000004,
+      "min": 2.27,
+      "max": 38.85
+    },
+    "5": {
+      "mean": 13.239000000000003,
+      "min": 2.88,
+      "max": 60
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 150,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 22,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Balancing the current 4/4 split with AI advice"
+      },
+      {
+        "round": 1,
+        "reason": "Consistent habit and skepticism of AI overreach"
+      },
+      {
+        "round": 1,
+        "reason": "Balanced congestion with AI recommendation"
+      },
+      {
+        "round": 2,
+        "reason": "Consistent habit and AI recommendation"
+      },
+      {
+        "round": 2,
+        "reason": "Prevent system overload with AI recommendation"
+      }
+    ]
+  }
+}

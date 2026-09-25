@@ -1,0 +1,88 @@
+{
+  "room_id": "JC2M",
+  "agent_condition": "regconsuader",
+  "total_rounds": 5,
+  "total_decisions": 250,
+  "distribution_by_round": {
+    "1": {
+      "Route A": 7,
+      "Route B": 23,
+      "Route C": 20
+    },
+    "2": {
+      "Route A": 29,
+      "Route B": 4,
+      "Route C": 17
+    },
+    "3": {
+      "Route A": 22,
+      "Route B": 6,
+      "Route C": 22
+    },
+    "4": {
+      "Route A": 7,
+      "Route B": 27,
+      "Route C": 16
+    },
+    "5": {
+      "Route A": 5,
+      "Route B": 23,
+      "Route C": 22
+    }
+  },
+  "latency_by_round": {
+    "1": {
+      "mean": 12.193200000000001,
+      "min": 1.91,
+      "max": 45.12
+    },
+    "2": {
+      "mean": 12.590399999999997,
+      "min": 2.76,
+      "max": 57.2
+    },
+    "3": {
+      "mean": 16.156999999999996,
+      "min": 2.7,
+      "max": 60
+    },
+    "4": {
+      "mean": 14.794400000000001,
+      "min": 3.5,
+      "max": 49.95
+    },
+    "5": {
+      "mean": 14.740800000000004,
+      "min": 1.7,
+      "max": 47.55
+    }
+  },
+  "data_quality": {
+    "real_llm_decisions": 250,
+    "fallback_decisions": 0,
+    "mock_decisions": 0,
+    "ai_mentions_without_advisor": 29,
+    "ai_mention_examples": [
+      {
+        "round": 1,
+        "reason": "Consistent routine outweighs AI advice due to time-pressure level today."
+      },
+      {
+        "round": 1,
+        "reason": "Optimizes travel times with AI recommendation"
+      },
+      {
+        "round": 1,
+        "reason": "AI advice optimizes both time and system flow"
+      },
+      {
+        "round": 1,
+        "reason": "Reduces congestion risk with AI's traffic advice"
+      },
+      {
+        "round": 1,
+        "reason": "Test the AI advice and reduce travel time risk"
+      }
+    ]
+  }
+}

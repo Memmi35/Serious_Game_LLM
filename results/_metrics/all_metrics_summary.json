@@ -1,0 +1,203 @@
+{
+  "generated_at": "2026-09-02",
+  "ideal_baseline_total_travel_time": 3278.86,
+  "persullm1": {
+    "qwen2.5:32b": {
+      "room_id": "G6OS",
+      "model": "qwen2.5:32b",
+      "total_travel_time": 3348.13,
+      "avg_gap_pct": 2.14,
+      "total_delay": 2147.81,
+      "congested_edges_gt2.0": 7,
+      "compute_time_min": 44.67,
+      "compliance_pct": 25.33,
+      "switch_rate_pct": 77.33,
+      "persuasive": 7.77,
+      "logic": 8.17
+    },
+    "qwen2.5:7b": {
+      "room_id": "61ZO",
+      "model": "qwen2.5:7b",
+      "total_travel_time": 3563.71,
+      "avg_gap_pct": 8.95,
+      "total_delay": 2364.5,
+      "congested_edges_gt2.0": 12,
+      "compute_time_min": 32.72,
+      "compliance_pct": 20.67,
+      "switch_rate_pct": 78.67,
+      "persuasive": 7.64,
+      "logic": 7.98
+    },
+    "deepseek-r1:32b": {
+      "room_id": "37V2",
+      "model": "deepseek-r1:32b",
+      "total_travel_time": 3314.36,
+      "avg_gap_pct": 1.26,
+      "total_delay": 2113.62,
+      "congested_edges_gt2.0": 7,
+      "compute_time_min": 167.35,
+      "compliance_pct": 33.33,
+      "switch_rate_pct": 72.67,
+      "persuasive": 7.94,
+      "logic": 8.19
+    },
+    "qwq:32b": {
+      "room_id": "72Y6",
+      "model": "qwq:32b",
+      "total_travel_time": 3365.11,
+      "avg_gap_pct": 2.64,
+      "total_delay": 2164.28,
+      "congested_edges_gt2.0": 8,
+      "compute_time_min": 257.14,
+      "compliance_pct": 38.67,
+      "switch_rate_pct": 66,
+      "persuasive": 8.17,
+      "logic": 8.46
+    }
+  },
+  "regconsuader_v2_scorecard": {
+    "qwen2.5:32b": {
+      "room_id": "77DZ",
+      "model": "qwen2.5:32b",
+      "total_travel_time": 3347.44,
+      "avg_gap_pct": 2.47,
+      "total_delay": 2145.5,
+      "congested_edges_gt2.0": 8,
+      "compute_time_min": 52.24,
+      "compliance_pct": 51.33,
+      "switch_rate_pct": 24,
+      "persuasive": 7.36,
+      "logic": 8.08
+    },
+    "qwen2.5:7b": {
+      "room_id": "IV99",
+      "model": "qwen2.5:7b",
+      "total_travel_time": 3548.53,
+      "avg_gap_pct": 7.83,
+      "total_delay": 2347.59,
+      "congested_edges_gt2.0": 10,
+      "compute_time_min": 33.53,
+      "compliance_pct": 34,
+      "switch_rate_pct": 37.33,
+      "persuasive": 7.43,
+      "logic": 8.07
+    },
+    "deepseek-r1:32b": {
+      "room_id": "GHBZ",
+      "model": "deepseek-r1:32b",
+      "total_travel_time": 3370.11,
+      "avg_gap_pct": 3.59,
+      "total_delay": 2169.87,
+      "congested_edges_gt2.0": 10,
+      "compute_time_min": 247.32,
+      "compliance_pct": 50,
+      "switch_rate_pct": 14.67,
+      "persuasive": 7.44,
+      "logic": 8
+    },
+    "qwq:32b": {
+      "room_id": "5ER0",
+      "model": "qwq:32b",
+      "total_travel_time": 3303.32,
+      "avg_gap_pct": 1.23,
+      "total_delay": 2102.87,
+      "congested_edges_gt2.0": 8,
+      "compute_time_min": 265.39,
+      "compliance_pct": 58.67,
+      "switch_rate_pct": 18,
+      "persuasive": 7.75,
+      "logic": 8.04
+    }
+  },
+  "regconsuader_v3_llm_selector": {
+    "qwen2.5:32b": {
+      "room_id": "85ZQ",
+      "model": "qwen2.5:32b",
+      "total_travel_time": 3421.55,
+      "avg_gap_pct": 4.27,
+      "total_delay": 2219.87,
+      "congested_edges_gt2.0": 11,
+      "compute_time_min": 58.12,
+      "compliance_pct": 52.67,
+      "switch_rate_pct": 22.67,
+      "persuasive": 7.42,
+      "logic": 7.94
+    },
+    "qwen2.5:7b": {
+      "room_id": "RAPS",
+      "model": "qwen2.5:7b",
+      "total_travel_time": 3504.4,
+      "avg_gap_pct": 6.09,
+      "total_delay": 2301.84,
+      "congested_edges_gt2.0": 11,
+      "compute_time_min": 35.94,
+      "compliance_pct": 34,
+      "switch_rate_pct": 36,
+      "persuasive": 7.45,
+      "logic": 8.01
+    },
+    "deepseek-r1:32b": {
+      "room_id": "2PQ2",
+      "model": "deepseek-r1:32b",
+      "total_travel_time": 3404.93,
+      "avg_gap_pct": 3.71,
+      "total_delay": 2204.22,
+      "congested_edges_gt2.0": 10,
+      "compute_time_min": 313.93,
+      "compliance_pct": 55.33,
+      "switch_rate_pct": 18.67,
+      "persuasive": 7.57,
+      "logic": 8.03
+    },
+    "qwq:32b": {
+      "room_id": "673N",
+      "model": "qwq:32b",
+      "total_travel_time": 3307.46,
+      "avg_gap_pct": 1.86,
+      "total_delay": 2106.91,
+      "congested_edges_gt2.0": 5,
+      "compute_time_min": 415.21,
+      "compliance_pct": 57.33,
+      "switch_rate_pct": 17.33,
+      "persuasive": 7.79,
+      "logic": 8.09
+    }
+  },
+  "reference": {
+    "ideal_baseline": {
+      "total_travel_time": 3278.86,
+      "avg_gap_pct": 0.0,
+      "total_delay": 2077.45,
+      "congested_edges_gt2.0": 7,
+      "compliance_pct": 100,
+      "switch_rate_pct": 0,
+      "persuasive": 10,
+      "logic": 10,
+      "note": "theoretical, brute-forced over real network topology, not a run"
+    },
+    "no_advisor": {
+      "room_id": "27WB",
+      "total_travel_time": 5121.33,
+      "avg_gap_pct": 27.42,
+      "avg_gap_pct_note": "ROUND 1 ONLY -- rounds 2-5 had no valid optimal split (route diversity collapsed)",
+      "total_delay": 3940.45,
+      "congested_edges_gt2.0": 8,
+      "compute_time_min": 10.05,
+      "compliance_pct": null,
+      "switch_rate_pct": 6,
+      "persuasive": null,
+      "logic": null
+    },
+    "worst_case": {
+      "total_travel_time": 6442.02,
+      "avg_gap_pct": 109.35,
+      "total_delay": 5238.12,
+      "congested_edges_gt2.0": 21,
+      "compliance_pct": 0,
+      "switch_rate_pct": null,
+      "persuasive": 1,
+      "logic": 1,
+      "note": "theoretical, brute-forced max-cost split over real network topology, not a run"
+    }
+  }
+}
