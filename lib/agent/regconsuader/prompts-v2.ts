@@ -28,14 +28,11 @@ export const REGCONSUADER_SYSTEM_PROMPT_V2_OPEN = CENTRAL_SYSTEM_PROMPT_V2
 // time) than this original wording once a topology-lookup bug in the
 // measurement script was fixed -- see project memory for the full story.
 // Do not re-strengthen this without new evidence.
+//
+// Guard text itself moved to lib/agent/prompts-v2.ts's
+// ANTI_HERDING_GUARD_TEXT -- see prompts.ts's RECOMMENDATION_INSTRUCTION
+// comment for why. recommend.ts prepends it conditionally.
 export const RECOMMENDATION_INSTRUCTION_V2 = `
-Guard against herding: other players this round are likely being shown a
-similar comparison of routes and could easily converge on whichever route
-currently looks best. Don't automatically push every player toward the
-same "best" route -- weigh how much this round genuinely still needs more
-players on it against the risk that many other players are being nudged
-there too, and this round's pile-up becomes the next round's bottleneck.
-
 Respond with ONLY a JSON object, no other text, in this exact shape:
 {"route": "A" | "B" | "C", "explanation": "2-4 sentences building a real case grounded in route travel times and this player's own history -- never player counts or distribution figures, per the CONSTRAINT above"}
 `
@@ -57,13 +54,6 @@ cite a number to win the argument.
 // Numbers-ALLOWED counterparts (no CONSTRAINT reference), for the same
 // suppression on/off toggle as REGCONSUADER_SYSTEM_PROMPT_V2_OPEN above.
 export const RECOMMENDATION_INSTRUCTION_V2_OPEN = `
-Guard against herding: other players this round are likely being shown a
-similar comparison of routes and could easily converge on whichever route
-currently looks best. Don't automatically push every player toward the
-same "best" route -- weigh how much this round genuinely still needs more
-players on it against the risk that many other players are being nudged
-there too, and this round's pile-up becomes the next round's bottleneck.
-
 Respond with ONLY a JSON object, no other text, in this exact shape:
 {"route": "A" | "B" | "C", "explanation": "2-4 sentences building a real case grounded in the numbers above -- not a one-line verdict"}
 `

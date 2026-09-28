@@ -22,6 +22,7 @@ import {
   RECOMMENDATION_INSTRUCTION_V2_OPEN,
   STRATEGY_FRAMINGS_OPEN,
 } from './prompts-v2'
+import { ANTI_HERDING_GUARD_TEXT } from '@/lib/agent/prompts-v2'
 import { pickStrategyFromScorecard } from './strategy'
 import { pickStrategyWithLLM } from './llm-selector'
 import { getMockRecommendation } from '@/lib/agent/mock'
@@ -49,13 +50,24 @@ const ACTIVE_SYSTEM_PROMPT =
       ? REGCONSUADER_SYSTEM_PROMPT_V2
       : REGCONSUADER_SYSTEM_PROMPT_V2_OPEN
     : REGCONSUADER_SYSTEM_PROMPT
-const ACTIVE_RECOMMENDATION_INSTRUCTION =
+const BASE_RECOMMENDATION_INSTRUCTION =
   PROMPT_VERSION === 'v2'
     ? SUPPRESS_NUMBERS
       ? RECOMMENDATION_INSTRUCTION_V2
       : RECOMMENDATION_INSTRUCTION_V2_OPEN
     : RECOMMENDATION_INSTRUCTION
 const ACTIVE_STRATEGY_FRAMINGS = PROMPT_VERSION === 'v2' && !SUPPRESS_NUMBERS ? STRATEGY_FRAMINGS_OPEN : STRATEGY_FRAMINGS
+
+// Anti-herding guard, now its own independent ablation component (see
+// lib/agent/prompts-v2.ts's ANTI_HERDING_GUARD_TEXT for why this was
+// promoted out of being baked unconditionally into the instruction
+// constants above). Defaults to true -- every RegConSuader room ever run
+// before this toggle existed always had this guard, so this default keeps
+// them reproducible unless explicitly disabled.
+const ANTI_HERDING = process.env.ANTI_HERDING_GUARD !== 'false'
+const ACTIVE_RECOMMENDATION_INSTRUCTION = ANTI_HERDING
+  ? `${ANTI_HERDING_GUARD_TEXT}\n${BASE_RECOMMENDATION_INSTRUCTION}`
+  : BASE_RECOMMENDATION_INSTRUCTION
 
 // Experiment A toggle: REGCONSUADER_SELECTOR=llm swaps the frozen-scorecard
 // lookup for the LLM-based per-player selector (llm-selector.ts). Defaults

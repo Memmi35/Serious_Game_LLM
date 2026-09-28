@@ -130,3 +130,22 @@ CONSTRAINT against stating player counts or distribution figures still
 applies here, including when you're tempted to cite a number to win the
 argument.
 `
+
+// Anti-herding guard, promoted to its own independent, cross-file toggle
+// (ANTI_HERDING_GUARD env var, wired in both this file's recommend.ts and
+// regconsuader/recommend.ts). Previously this text existed only inside
+// RegConSuader's RECOMMENDATION_INSTRUCTION/_V2/_V2_OPEN, baked in
+// unconditionally -- meaning "switching to RegConSuader's pipeline" and
+// "getting anti-herding" were the same, unavoidable action, confounding the
+// V1-V5 ablation's V4 cell (structured prompt + selector, no suppression)
+// with an unintended 4th change. Text unchanged from RegConSuader's
+// original wording (added after room 1DHB showed severe herding -- see
+// project roadmap memory) -- only its scope changed, not its content.
+export const ANTI_HERDING_GUARD_TEXT = `
+Guard against herding: other players this round are likely being shown a
+similar comparison of routes and could easily converge on whichever route
+currently looks best. Don't automatically push every player toward the
+same "best" route -- weigh how much this round genuinely still needs more
+players on it against the risk that many other players are being nudged
+there too, and this round's pile-up becomes the next round's bottleneck.
+`

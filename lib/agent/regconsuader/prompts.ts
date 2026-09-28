@@ -41,14 +41,13 @@ export const STRATEGY_FRAMINGS: Record<MetaStrategy, string> = {
 // switch-phase guard below was already built to prevent, just showing up
 // in the opening pitch now that compliance is high enough for it to matter
 // there too.
+// Anti-herding guard text moved to lib/agent/prompts-v2.ts's
+// ANTI_HERDING_GUARD_TEXT (now an independent toggle, ANTI_HERDING_GUARD
+// env var, wired in recommend.ts) -- was baked in here unconditionally,
+// which meant every RegConSuader room ever run always had it and it could
+// never be isolated as its own ablation variable. recommend.ts prepends it
+// conditionally to whichever instruction is picked below.
 export const RECOMMENDATION_INSTRUCTION = `
-Guard against herding: other players this round are likely being shown a
-similar comparison of routes and could easily converge on whichever route
-currently looks best. Don't automatically push every player toward the
-same "best" route — weigh how much this round genuinely still needs more
-players on it against the risk that many other players are being nudged
-there too, and this round's pile-up becomes the next round's bottleneck.
-
 Respond with ONLY a JSON object, no other text, in this exact shape:
 {"route": "A" | "B" | "C", "explanation": "1-2 plain sentences grounded in the numbers above"}
 `

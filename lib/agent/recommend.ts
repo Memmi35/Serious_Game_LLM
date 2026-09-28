@@ -6,6 +6,7 @@ import {
   CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2,
   RECOMMENDATION_INSTRUCTION_V2,
   RECOMMENDATION_INSTRUCTION_V2_OPEN,
+  ANTI_HERDING_GUARD_TEXT,
 } from './prompts-v2'
 import { getMockRecommendation } from './mock'
 import db from '@/lib/db'
@@ -14,12 +15,22 @@ import db from '@/lib/db'
 const USE_MOCK = process.env.AGENT_MODE !== 'ollama'
 
 // Ablation-study component toggle: structured (v2) vs unstructured (v1)
-// prompt -- one of three independent on/off switches on this same advisor
-// mechanism (the other two: numbers-suppression rule, strategy-selector
-// agent). Defaults to v1 so this file's behavior is unchanged unless
-// explicitly opted into v2. 'personal' condition has no v2 variant and
-// always stays on v1 regardless of this flag.
+// prompt -- one of four independent on/off switches on this same advisor
+// mechanism (the others: numbers-suppression rule, strategy-selector agent,
+// anti-herding guard). Defaults to v1 so this file's behavior is unchanged
+// unless explicitly opted into v2. 'personal' condition has no v2 variant
+// and always stays on v1 regardless of this flag.
 const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
+
+// Anti-herding guard toggle, shared with regconsuader/recommend.ts's own
+// ANTI_HERDING_GUARD env var (see lib/agent/prompts-v2.ts's
+// ANTI_HERDING_GUARD_TEXT for the full rationale -- this text used to be
+// baked unconditionally into RegConSuader's own prompts and entirely absent
+// here, which confounded "switching to RegConSuader's pipeline" with
+// "getting anti-herding" as a single, unavoidable change). Defaults to
+// false here -- PersuLLM-1 never had this guard, so every past PersuLLM-1
+// room stays reproducible unless this is explicitly set to 'true'.
+const ANTI_HERDING = process.env.ANTI_HERDING_GUARD === 'true'
 
 function systemPromptForVersioned(condition: string): string {
   if (PROMPT_VERSION === 'v2') {
@@ -30,8 +41,13 @@ function systemPromptForVersioned(condition: string): string {
 }
 
 function recommendationInstructionVersioned(condition: string): string {
-  if (PROMPT_VERSION !== 'v2') return RECOMMENDATION_INSTRUCTION
-  return condition === 'central_no_numbers' ? RECOMMENDATION_INSTRUCTION_V2 : RECOMMENDATION_INSTRUCTION_V2_OPEN
+  const base =
+    PROMPT_VERSION !== 'v2'
+      ? RECOMMENDATION_INSTRUCTION
+      : condition === 'central_no_numbers'
+        ? RECOMMENDATION_INSTRUCTION_V2
+        : RECOMMENDATION_INSTRUCTION_V2_OPEN
+  return ANTI_HERDING ? `${ANTI_HERDING_GUARD_TEXT}\n${base}` : base
 }
 
 type Recommendation = {
