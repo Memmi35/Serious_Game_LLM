@@ -81,4 +81,8 @@ export const STRATEGY_FRAMINGS_OPEN: Record<MetaStrategy, string> = {
   social_proof:
     'For this round, lead with social proof: emphasize what other players in the room are currently choosing, and frame the recommended route as the one most players are converging on.',
   consistency: STRATEGY_FRAMINGS.consistency,
+  reciprocity: STRATEGY_FRAMINGS.reciprocity,
+  liking: STRATEGY_FRAMINGS.liking,
+  scarcity: STRATEGY_FRAMINGS.scarcity,
+  unity: STRATEGY_FRAMINGS.unity,
 }

@@ -13,9 +13,27 @@ import { buildContextBlock as sharedBuildContextBlock } from '@/lib/agent/prompt
 // RegConSuader-specific.
 export const REGCONSUADER_SYSTEM_PROMPT = CENTRAL_NO_NUMBERS_SYSTEM_PROMPT
 
-export type MetaStrategy = 'authority' | 'social_proof' | 'consistency'
+// Extended from the original 3 (authority/social_proof/consistency) to the
+// full Cialdini (2021) 7-principle taxonomy -- reciprocity, liking,
+// scarcity, unity added. In practice this stays "LLM-selector only": the
+// frozen scorecard (strategy.ts's pickStrategyFromScorecard) is seeded from
+// regconsuader_strategy_stats, which only has rows for the original 3 --
+// every round (1-5) has seeded data for this project, so its per-round
+// argmax loop always overwrites the fallback with one of those 3, and the
+// 7-wide assignStrategy() rotation below is never actually reached. The LLM
+// selector (llm-selector.ts) is the only path that can genuinely pick one
+// of the 4 new strategies.
+export type MetaStrategy = 'authority' | 'social_proof' | 'consistency' | 'reciprocity' | 'liking' | 'scarcity' | 'unity'
 
-export const META_STRATEGIES: MetaStrategy[] = ['authority', 'social_proof', 'consistency']
+export const META_STRATEGIES: MetaStrategy[] = [
+  'authority',
+  'social_proof',
+  'consistency',
+  'reciprocity',
+  'liking',
+  'scarcity',
+  'unity',
+]
 
 // One tactical framing line per strategy, appended to the per-round prompt.
 // These are deliberately separate from the base system prompt above so the
@@ -28,6 +46,14 @@ export const STRATEGY_FRAMINGS: Record<MetaStrategy, string> = {
     'For this round, lead with social proof: emphasize what other players in the room are currently choosing, and frame the recommended route as the one most players are converging on. Do not disclose exact counts — describe the trend qualitatively, consistent with the numbers-suppression constraint above.',
   consistency:
     "For this round, lead with commitment and consistency: reference the player's own past choices and frame the recommended route as consistent with the pattern they've already shown.",
+  reciprocity:
+    "For this round, lead with reciprocity: give the player something of real value first — a clear, honest piece of insight about how this round's congestion is actually forming — before asking them to follow the recommendation, so the ask feels like a fair exchange rather than a one-sided demand.",
+  liking:
+    "For this round, lead with liking: build rapport by relating to the player's own situation — acknowledge what they're likely weighing (time, hassle, past frustration) in a warm, non-generic way — before making the case for the recommended route.",
+  scarcity:
+    "For this round, lead with scarcity: frame the recommended route's current advantage as a narrowing window — the route is favorable right now but won't stay that way once more players commit.",
+  unity:
+    'For this round, lead with unity: frame the recommendation in terms of a shared identity — "we" as everyone navigating this same network together — so following it reads as contributing to a shared outcome, not just a personal choice.',
 }
 
 // Added after room 1DHB (Room 1's first full run) showed severe herding in

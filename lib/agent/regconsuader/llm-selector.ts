@@ -75,10 +75,15 @@ function summarizePlayerHistory(history: HistoryRow[], strategiesUsed: Map<numbe
     .join('\n')
 }
 
+// Built from META_STRATEGIES rather than hardcoded, so the strategy
+// vocabulary (originally 3 -- authority/social_proof/consistency -- now
+// the full Cialdini (2021) 7-principle set) stays in sync with prompts.ts's
+// STRATEGY_FRAMINGS without needing this string edited by hand whenever
+// the vocabulary changes.
 const STRATEGY_SELECTOR_INSTRUCTION = `
 You are choosing a persuasion strategy for the advisor to use with ONE
-specific player, for this round only. Three strategies are available:
-authority, social_proof, consistency.
+specific player, for this round only. ${META_STRATEGIES.length} strategies
+are available: ${META_STRATEGIES.join(', ')}.
 
 Below is this player's own history in the game so far, including which
 strategy the advisor used on them each past round and how they responded.
@@ -89,7 +94,7 @@ you can reinforce it. Do not assume anything about other players.
 You MUST include both fields below — a response missing "reasoning" is
 invalid and will be discarded. Respond with ONLY a JSON object, no other
 text, in this exact shape, both keys required:
-{"strategy": "authority" | "social_proof" | "consistency", "reasoning": "1 short sentence explaining why this player specifically"}
+{"strategy": ${META_STRATEGIES.map((s) => `"${s}"`).join(' | ')}, "reasoning": "1 short sentence explaining why this player specifically"}
 `
 
 type StrategyChoice = { strategy: MetaStrategy; reasoning: string | null }
