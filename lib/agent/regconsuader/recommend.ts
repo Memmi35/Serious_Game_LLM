@@ -15,7 +15,13 @@ import {
   buildContextBlock,
   type MetaStrategy,
 } from './prompts'
-import { REGCONSUADER_SYSTEM_PROMPT_V2, RECOMMENDATION_INSTRUCTION_V2 } from './prompts-v2'
+import {
+  REGCONSUADER_SYSTEM_PROMPT_V2,
+  REGCONSUADER_SYSTEM_PROMPT_V2_OPEN,
+  RECOMMENDATION_INSTRUCTION_V2,
+  RECOMMENDATION_INSTRUCTION_V2_OPEN,
+  STRATEGY_FRAMINGS_OPEN,
+} from './prompts-v2'
 import { pickStrategyFromScorecard } from './strategy'
 import { pickStrategyWithLLM } from './llm-selector'
 import { getMockRecommendation } from '@/lib/agent/mock'
@@ -27,8 +33,29 @@ import { getMockRecommendation } from '@/lib/agent/mock'
 // REGCONSUADER_SELECTOR. Switch phase is intentionally not versioned here
 // (this project runs V3 without it).
 const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
-const ACTIVE_SYSTEM_PROMPT = PROMPT_VERSION === 'v2' ? REGCONSUADER_SYSTEM_PROMPT_V2 : REGCONSUADER_SYSTEM_PROMPT
-const ACTIVE_RECOMMENDATION_INSTRUCTION = PROMPT_VERSION === 'v2' ? RECOMMENDATION_INSTRUCTION_V2 : RECOMMENDATION_INSTRUCTION
+
+// Numbers-suppression component toggle for the V1-V5 ablation (see project
+// roadmap memory). Defaults to true (suppressed) so every past RegConSuader
+// room -- which always hardcoded suppression on -- stays reproducible
+// unless this is explicitly set to 'false'. Only meaningful when
+// PROMPT_VERSION=v2 (v1 has no _OPEN counterpart -- not needed by the
+// ablation plan, which only ever pairs suppression-off with the structured
+// prompt).
+const SUPPRESS_NUMBERS = process.env.REGCONSUADER_SUPPRESS_NUMBERS !== 'false'
+
+const ACTIVE_SYSTEM_PROMPT =
+  PROMPT_VERSION === 'v2'
+    ? SUPPRESS_NUMBERS
+      ? REGCONSUADER_SYSTEM_PROMPT_V2
+      : REGCONSUADER_SYSTEM_PROMPT_V2_OPEN
+    : REGCONSUADER_SYSTEM_PROMPT
+const ACTIVE_RECOMMENDATION_INSTRUCTION =
+  PROMPT_VERSION === 'v2'
+    ? SUPPRESS_NUMBERS
+      ? RECOMMENDATION_INSTRUCTION_V2
+      : RECOMMENDATION_INSTRUCTION_V2_OPEN
+    : RECOMMENDATION_INSTRUCTION
+const ACTIVE_STRATEGY_FRAMINGS = PROMPT_VERSION === 'v2' && !SUPPRESS_NUMBERS ? STRATEGY_FRAMINGS_OPEN : STRATEGY_FRAMINGS
 
 // Experiment A toggle: REGCONSUADER_SELECTOR=llm swaps the frozen-scorecard
 // lookup for the LLM-based per-player selector (llm-selector.ts). Defaults
@@ -116,7 +143,7 @@ export async function generateRegConSuaderRecommendation({
         { role: 'system', content: ACTIVE_SYSTEM_PROMPT },
         {
           role: 'user',
-          content: `${contextBlock}\n\n${STRATEGY_FRAMINGS[strategy]}\n\n${ACTIVE_RECOMMENDATION_INSTRUCTION}`,
+          content: `${contextBlock}\n\n${ACTIVE_STRATEGY_FRAMINGS[strategy]}\n\n${ACTIVE_RECOMMENDATION_INSTRUCTION}`,
         },
       ],
       { json: true, model: persuaderModel }
