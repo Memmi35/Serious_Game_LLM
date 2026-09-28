@@ -58,7 +58,7 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const CONDITION = "regconsuader";
 
 function parseArgs(argv) {
-  const args = { baseUrl: "http://137.121.170.69:8901", persuaderModel: null, agents: null, rounds: null };
+  const args = { baseUrl: "http://137.121.170.69:8901", persuaderModel: null, agents: null, rounds: null, switchPhase: true };
   for (const arg of argv) {
     const [key, value] = arg.replace(/^--/, "").split("=");
     if (key === "base-url" && value) args.baseUrl = value.replace(/\/$/, "");
@@ -67,6 +67,13 @@ function parseArgs(argv) {
     // real experiment.
     if (key === "agents" && value) args.agents = parseInt(value, 10);
     if (key === "rounds" && value) args.rounds = parseInt(value, 10);
+    // Same flag/default as scripts/simulated-population/run-population.mjs --
+    // every metric this project computes (compute-first-choice-metrics.mjs)
+    // uses row.initial_choice only and never touches row.chosen_route, so
+    // the switch phase contributes no data any comparison actually uses; it
+    // just roughly doubles per-room runtime. Defaults to on to match every
+    // RegConSuader room run before this flag existed.
+    if (key === "switch-phase" && value) args.switchPhase = value !== "off";
   }
   return args;
 }
@@ -103,7 +110,7 @@ async function callApi(baseUrl, method, endpoint, body) {
 }
 
 async function main() {
-  const { baseUrl, persuaderModel, agents, rounds } = parseArgs(process.argv.slice(2));
+  const { baseUrl, persuaderModel, agents, rounds, switchPhase } = parseArgs(process.argv.slice(2));
   const dbUrl = readDatabaseUrl();
   const pool = new Pool({ connectionString: dbUrl });
   const activePersonas = agents ? PERSONAS.slice(0, agents) : PERSONAS;
@@ -118,6 +125,7 @@ async function main() {
         : ` (population model: ${process.env.AGENT_POPULATION_MODEL || "qwen2.5:3b"}, advisor model: ${persuaderModel || process.env.OLLAMA_MODEL || "llama3.1"})`
     }`
   );
+  console.log(`Switch phase: ${switchPhase ? "on" : "off"}`);
 
   // 1. Create room
   const createResult = await callApi(baseUrl, "POST", "/api/admin/create-room", {
@@ -262,80 +270,84 @@ async function main() {
     console.log(`Round ${round} initial choices done in ${fmtElapsed(Date.now() - roundStart)} — distribution:`, routeCounts);
 
     // Phase B: reflection + switch window, mirroring PersuLLM-1's runner.
-    const switchPhaseStart = Date.now();
-    console.log(`--- Round ${round} reflection/switch phase ---`);
-    let switchCount = 0;
+    // Skippable via --switch-phase=off -- see parseArgs comment for why
+    // (unused by any metric this project computes, roughly doubles runtime).
+    if (switchPhase) {
+      const switchPhaseStart = Date.now();
+      console.log(`--- Round ${round} reflection/switch phase ---`);
+      let switchCount = 0;
 
-    for (const session of sessions) {
-      const state = await callApi(baseUrl, "GET", `/api/get-state?session_id=${session.sessionId}`);
-      const routeEdgeSets = routeEdgeSetsFromState(state.routes, state.network.edges);
-      const optimal = findOptimalSplit(routeEdgeSets, sessions.length);
+      for (const session of sessions) {
+        const state = await callApi(baseUrl, "GET", `/api/get-state?session_id=${session.sessionId}`);
+        const routeEdgeSets = routeEdgeSetsFromState(state.routes, state.network.edges);
+        const optimal = findOptimalSplit(routeEdgeSets, sessions.length);
 
-      let switchDialogue = [];
-      const rec = await callApi(baseUrl, "POST", "/api/regconsuader/switch-recommend", {
-        sessionId: session.sessionId,
-        roomId,
-        round,
-        currentChoice: state.player_choice,
-        predictedTime: state.player_predicted_time,
-        realizedTime: state.player_realized_time,
-      });
-
-      if (!rec.error && rec.route) {
-        const openingMessage = `I'd suggest ${rec.route}. ${rec.explanation}`;
-        switchDialogue.push({ speaker: "advisor", text: openingMessage });
-
-        const agentReply = await generatePersuadeeReply(session.persona, openingMessage);
-        switchDialogue.push({ speaker: "agent", text: agentReply.reply });
-
-        const chatRes = await callApi(baseUrl, "POST", "/api/regconsuader/chat", {
+        let switchDialogue = [];
+        const rec = await callApi(baseUrl, "POST", "/api/regconsuader/switch-recommend", {
           sessionId: session.sessionId,
           roomId,
           round,
-          message: agentReply.reply,
-          history: [{ role: "assistant", content: openingMessage }],
+          currentChoice: state.player_choice,
+          predictedTime: state.player_predicted_time,
+          realizedTime: state.player_realized_time,
         });
-        if (chatRes.reply) switchDialogue.push({ speaker: "advisor", text: chatRes.reply });
-      }
 
-      const switchDecision = await decideSwitchLLM(
-        session.persona,
-        liveAdjustedRoutesData(state, routeCounts),
-        state.player_choice,
-        state.player_predicted_time,
-        state.player_realized_time,
-        state.choice_distribution,
-        optimal.counts,
-        Math.random,
-        switchDialogue
-      );
+        if (!rec.error && rec.route) {
+          const openingMessage = `I'd suggest ${rec.route}. ${rec.explanation}`;
+          switchDialogue.push({ speaker: "advisor", text: openingMessage });
 
-      await callApi(baseUrl, "POST", "/api/save-reason", {
-        session_id: session.sessionId,
-        round,
-        phase: "switch",
-        reason: switchDecision.reason,
-        reason_text: switchDecision.reason,
-        persuasion_transcript: switchDialogue.length ? switchDialogue : null,
-      });
+          const agentReply = await generatePersuadeeReply(session.persona, openingMessage);
+          switchDialogue.push({ speaker: "agent", text: agentReply.reply });
 
-      if (switchDecision.switched) {
-        await callApi(baseUrl, "POST", "/api/change-choice", {
+          const chatRes = await callApi(baseUrl, "POST", "/api/regconsuader/chat", {
+            sessionId: session.sessionId,
+            roomId,
+            round,
+            message: agentReply.reply,
+            history: [{ role: "assistant", content: openingMessage }],
+          });
+          if (chatRes.reply) switchDialogue.push({ speaker: "advisor", text: chatRes.reply });
+        }
+
+        const switchDecision = await decideSwitchLLM(
+          session.persona,
+          liveAdjustedRoutesData(state, routeCounts),
+          state.player_choice,
+          state.player_predicted_time,
+          state.player_realized_time,
+          state.choice_distribution,
+          optimal.counts,
+          Math.random,
+          switchDialogue
+        );
+
+        await callApi(baseUrl, "POST", "/api/save-reason", {
           session_id: session.sessionId,
-          new_route: switchDecision.route,
+          round,
+          phase: "switch",
+          reason: switchDecision.reason,
+          reason_text: switchDecision.reason,
+          persuasion_transcript: switchDialogue.length ? switchDialogue : null,
         });
-        switchCount += 1;
-        routeCounts[state.player_choice] = (routeCounts[state.player_choice] || 0) - 1;
-        routeCounts[switchDecision.route] = (routeCounts[switchDecision.route] || 0) + 1;
-        console.log(`  [switch] ${session.persona.name}: ${state.player_choice} -> ${switchDecision.route}  "${switchDecision.reason}"`);
-        session.previousChoice = switchDecision.route;
-      }
-    }
 
-    console.log(
-      `Round ${round} switch phase done in ${fmtElapsed(Date.now() - switchPhaseStart)} — ${switchCount}/${sessions.length} switched — final distribution:`,
-      routeCounts
-    );
+        if (switchDecision.switched) {
+          await callApi(baseUrl, "POST", "/api/change-choice", {
+            session_id: session.sessionId,
+            new_route: switchDecision.route,
+          });
+          switchCount += 1;
+          routeCounts[state.player_choice] = (routeCounts[state.player_choice] || 0) - 1;
+          routeCounts[switchDecision.route] = (routeCounts[switchDecision.route] || 0) + 1;
+          console.log(`  [switch] ${session.persona.name}: ${state.player_choice} -> ${switchDecision.route}  "${switchDecision.reason}"`);
+          session.previousChoice = switchDecision.route;
+        }
+      }
+
+      console.log(
+        `Round ${round} switch phase done in ${fmtElapsed(Date.now() - switchPhaseStart)} — ${switchCount}/${sessions.length} switched — final distribution:`,
+        routeCounts
+      );
+    }
 
     // Sanity check before advancing.
     const check = await callApi(baseUrl, "GET", `/api/get-state?session_id=${sessions[sessions.length - 1].sessionId}`);
