@@ -65,6 +65,14 @@ const ACTIVE_STRATEGY_FRAMINGS = PROMPT_VERSION === 'v2' && !SUPPRESS_NUMBERS ? 
 // before this toggle existed always had this guard, so this default keeps
 // them reproducible unless explicitly disabled.
 const ANTI_HERDING = process.env.ANTI_HERDING_GUARD !== 'false'
+
+// Advisor live-view toggle: gives the advisor's own context a live,
+// in-round-recalculated predicted time per route (see
+// lib/agent/context.ts's getRoomContext liveView option) instead of the
+// frozen per-round snapshot every past room used. Defaults to false
+// (existing behavior) -- scoped to RegConSuader only for now, not
+// PersuLLM-1's recommend.ts.
+const ADVISOR_LIVE_VIEW = process.env.ADVISOR_LIVE_VIEW === 'true'
 const ACTIVE_RECOMMENDATION_INSTRUCTION = ANTI_HERDING
   ? `${ANTI_HERDING_GUARD_TEXT}\n${BASE_RECOMMENDATION_INSTRUCTION}`
   : BASE_RECOMMENDATION_INSTRUCTION
@@ -140,7 +148,7 @@ export async function generateRegConSuaderRecommendation({
   }
 
   const [roomCtx, history] = await Promise.all([
-    getRoomContext(roomId, round),
+    getRoomContext(roomId, round, { liveView: ADVISOR_LIVE_VIEW }),
     getPlayerHistory(sessionId),
   ])
 
@@ -218,7 +226,7 @@ export async function generateRegConSuaderSwitchRecommendation({
       `SELECT regconsuader_strategy FROM agent_recommendations WHERE session_id = $1 AND round = $2`,
       [sessionId, round]
     ),
-    getRoomContext(roomId, round),
+    getRoomContext(roomId, round, { liveView: ADVISOR_LIVE_VIEW }),
     getPlayerHistory(sessionId),
   ])
   const strategy: MetaStrategy =

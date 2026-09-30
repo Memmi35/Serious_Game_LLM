@@ -1,5 +1,5 @@
 import db from '@/lib/db'
-import { findRoutes } from '@/lib/traffic-simulation'
+import { findRoutes, bprTime } from '@/lib/traffic-simulation'
 import { routeEdgeSetsFromRoutes, findOptimalSplit } from '@/lib/optimal-split'
 
 export type RouteSummary = {
@@ -29,7 +29,23 @@ export type HistoryRow = {
 
 // Predicted times/routes aren't persisted per round — recompute them the same
 // way app/api/make-choice/route.ts does, from the room's live edges.
-export async function getRoomContext(roomId: string, round: number): Promise<RoomContext> {
+//
+// opts.liveView: recomputes each route's predictedTime using this round's
+// live in-progress choice counts (baseFlow + already-chosen-this-round + 1),
+// mirroring scripts/regconsuader/run-population.mjs's liveAdjustedRoutesData
+// -- but for the ADVISOR's own reasoning instead of the persuadee's. Without
+// this, traffic_edges.current_flow (and therefore every route's predicted
+// time) stays frozen for the whole round -- only updated in
+// app/api/admin/room-action/route.ts when the round advances -- so the
+// advisor recommends using the same stale times for player 1 and player 50
+// even as dozens of players pile onto the same route in between. Defaults
+// to off (existing behavior, every past room) -- opt in via callers that
+// pass { liveView: true }.
+export async function getRoomContext(
+  roomId: string,
+  round: number,
+  opts?: { liveView?: boolean }
+): Promise<RoomContext> {
   const roomRes = await db.query(
     `SELECT current_origin, current_destination FROM game_rooms WHERE id = $1`,
     [roomId]
@@ -66,6 +82,26 @@ export async function getRoomContext(roomId: string, round: number): Promise<Roo
     [roomId, round]
   )
 
+  const liveCounts: Record<string, number> = {}
+  for (const row of distRes.rows as { chosen_route: string; count: number }[]) {
+    liveCounts[row.chosen_route] = row.count
+  }
+
+  const finalRouteSummaries: RouteSummary[] = opts?.liveView
+    ? Object.values(routes).map((r) => ({
+        name: r.name,
+        path: r.path,
+        predictedTime:
+          Math.round(
+            r.edges.reduce(
+              (sum, e) => sum + bprTime(e.freeTime, e.baseFlow + (liveCounts[r.name] || 0) + 1, e.capacity),
+              0
+            ) * 100
+          ) / 100,
+        congestion: r.congestionLevel,
+      }))
+    : routeSummaries
+
   // Optimal split depends only on population size + route/edge structure,
   // not on what anyone has actually chosen — so it's computable regardless
   // of submission state this round.
@@ -85,7 +121,7 @@ export async function getRoomContext(roomId: string, round: number): Promise<Roo
   return {
     origin: room.current_origin,
     destination: room.current_destination,
-    routes: routeSummaries,
+    routes: finalRouteSummaries,
     distribution: distRes.rows.map((r) => ({ route: r.chosen_route, count: r.count })),
     optimalSplit,
   }

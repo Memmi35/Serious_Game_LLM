@@ -58,7 +58,7 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const CONDITION = "regconsuader";
 
 function parseArgs(argv) {
-  const args = { baseUrl: "http://137.121.170.69:8901", persuaderModel: null, agents: null, rounds: null, switchPhase: true };
+  const args = { baseUrl: "http://137.121.170.69:8901", persuaderModel: null, agents: null, rounds: null, switchPhase: true, persuadeeLiveView: true };
   for (const arg of argv) {
     const [key, value] = arg.replace(/^--/, "").split("=");
     if (key === "base-url" && value) args.baseUrl = value.replace(/\/$/, "");
@@ -74,6 +74,12 @@ function parseArgs(argv) {
     // just roughly doubles per-room runtime. Defaults to on to match every
     // RegConSuader room run before this flag existed.
     if (key === "switch-phase" && value) args.switchPhase = value !== "off";
+    // Static-persuadee test: pairs with the advisor's own ADVISOR_LIVE_VIEW
+    // env var (lib/agent/regconsuader/recommend.ts) to swap which side sees
+    // live in-round crowding -- persuadee static, advisor live, instead of
+    // the reverse (persuadee live via liveAdjustedRoutesData below, advisor
+    // static) every past room used. Defaults to on (existing behavior).
+    if (key === "persuadee-live-view" && value) args.persuadeeLiveView = value !== "off";
   }
   return args;
 }
@@ -110,7 +116,7 @@ async function callApi(baseUrl, method, endpoint, body) {
 }
 
 async function main() {
-  const { baseUrl, persuaderModel, agents, rounds, switchPhase } = parseArgs(process.argv.slice(2));
+  const { baseUrl, persuaderModel, agents, rounds, switchPhase, persuadeeLiveView } = parseArgs(process.argv.slice(2));
   const dbUrl = readDatabaseUrl();
   const pool = new Pool({ connectionString: dbUrl });
   const activePersonas = agents ? PERSONAS.slice(0, agents) : PERSONAS;
@@ -126,6 +132,7 @@ async function main() {
     }`
   );
   console.log(`Switch phase: ${switchPhase ? "on" : "off"}`);
+  console.log(`Persuadee live view: ${persuadeeLiveView ? "on" : "off"} (advisor live view controlled separately via ADVISOR_LIVE_VIEW env var)`);
 
   // 1. Create room
   const createResult = await callApi(baseUrl, "POST", "/api/admin/create-room", {
@@ -236,7 +243,7 @@ async function main() {
 
       const decision = await decideFinalChoiceAfterPersuasion(
         session.persona,
-        liveAdjustedRoutesData(state, routeCounts),
+        persuadeeLiveView ? liveAdjustedRoutesData(state, routeCounts) : state.routes,
         state.network.edges,
         session.previousChoice,
         dialogue,
@@ -311,7 +318,7 @@ async function main() {
 
         const switchDecision = await decideSwitchLLM(
           session.persona,
-          liveAdjustedRoutesData(state, routeCounts),
+          persuadeeLiveView ? liveAdjustedRoutesData(state, routeCounts) : state.routes,
           state.player_choice,
           state.player_predicted_time,
           state.player_realized_time,
