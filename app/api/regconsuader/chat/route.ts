@@ -21,6 +21,10 @@ const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
 // it defaults to suppressed.
 const SUPPRESS_NUMBERS = process.env.REGCONSUADER_SUPPRESS_NUMBERS !== 'false'
 
+// Same ADVISOR_LIVE_VIEW toggle as recommend.ts -- kept consistent within a
+// turn (see PersuLLM-1's chat route for the same comment).
+const ADVISOR_LIVE_VIEW = process.env.ADVISOR_LIVE_VIEW === 'true'
+
 // Separate endpoint from /api/agent/chat (PersuLLM-1) — see project memory
 // on keeping PersuLLM-1's own code path untouched.
 export async function POST(req: NextRequest) {
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest) {
     const strategy: MetaStrategy = cached.rows[0]?.regconsuader_strategy ?? (await pickStrategyFromScorecard(sessionId, round))
 
     const [roomCtx, playerHistory] = await Promise.all([
-      getRoomContext(roomId, round),
+      getRoomContext(roomId, round, { liveView: ADVISOR_LIVE_VIEW }),
       getPlayerHistory(sessionId),
     ])
 

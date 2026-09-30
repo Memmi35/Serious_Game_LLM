@@ -19,6 +19,13 @@ const USE_MOCK = process.env.AGENT_MODE !== 'ollama'
 // with a "the advisor contradicted its own opening tone" artifact.
 const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
 
+// Same ADVISOR_LIVE_VIEW toggle as lib/agent/recommend.ts -- kept consistent
+// within a turn (the chat call happens immediately after the opening pitch
+// for the same agent, so the live count is nearly identical either way, but
+// this avoids an inconsistency where the pitch uses live data and the
+// immediate follow-up doesn't).
+const ADVISOR_LIVE_VIEW = process.env.ADVISOR_LIVE_VIEW === 'true'
+
 function versionedSystemAndChatInstruction(condition: string): string {
   if (PROMPT_VERSION === 'v2' && (condition === 'central' || condition === 'central_no_numbers')) {
     const suppressed = condition === 'central_no_numbers'
@@ -63,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     try {
       const [roomCtx, playerHistory] = await Promise.all([
-        getRoomContext(roomId, round),
+        getRoomContext(roomId, round, { liveView: ADVISOR_LIVE_VIEW }),
         getPlayerHistory(sessionId),
       ])
 

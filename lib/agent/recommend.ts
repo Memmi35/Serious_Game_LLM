@@ -32,6 +32,15 @@ const PROMPT_VERSION = process.env.PROMPT_VERSION === 'v2' ? 'v2' : 'v1'
 // room stays reproducible unless this is explicitly set to 'true'.
 const ANTI_HERDING = process.env.ANTI_HERDING_GUARD === 'true'
 
+// Same ADVISOR_LIVE_VIEW toggle as regconsuader/recommend.ts -- see
+// lib/agent/context.ts's getRoomContext liveView option. Defaults to false
+// (existing behavior, every past PersuLLM-1 room). The persuadee side needs
+// no matching toggle here -- scripts/simulated-population/run-population.mjs
+// never had a live-adjustment fix in the first place (that was only ever
+// built for RegConSuader's runner), so the persuadee is already static by
+// default for every V1/V2/V3-type room.
+const ADVISOR_LIVE_VIEW = process.env.ADVISOR_LIVE_VIEW === 'true'
+
 function systemPromptForVersioned(condition: string): string {
   if (PROMPT_VERSION === 'v2') {
     if (condition === 'central_no_numbers') return CENTRAL_NO_NUMBERS_SYSTEM_PROMPT_V2
@@ -85,7 +94,7 @@ async function callModel(
 
   try {
     const [roomCtx, history] = await Promise.all([
-      getRoomContext(roomId, round),
+      getRoomContext(roomId, round, { liveView: ADVISOR_LIVE_VIEW }),
       getPlayerHistory(sessionId),
     ])
 
@@ -181,7 +190,7 @@ export async function generateSwitchRecommendation({
 
   try {
     const [roomCtx, history] = await Promise.all([
-      getRoomContext(roomId, round),
+      getRoomContext(roomId, round, { liveView: ADVISOR_LIVE_VIEW }),
       getPlayerHistory(sessionId),
     ])
 
