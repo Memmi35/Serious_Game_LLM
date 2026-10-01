@@ -78,21 +78,29 @@ export const STRATEGY_FRAMINGS: Record<MetaStrategy, string> = {
 // remaining one instead. This keeps the full 7-option palette and instead
 // gives the model real matching criteria, so it can place players better
 // without removing any option.
+//
+// REVISED: the first version of this file invented its own matching
+// heuristics from scratch, which measured worse than no criteria at all
+// (room HQ0P). This version instead grounds each criterion directly in
+// Cialdini's (2021) own stated activation condition for that principle --
+// the specific circumstance under which the research says it persuades
+// best -- translated onto the only signal the selector actually has
+// access to: this player's own game history.
 export const STRATEGY_MATCH_CRITERIA: Record<MetaStrategy, string> = {
   authority:
-    'best fit: a player who has not expressed distrust of the system-optimal calculation itself, and whose stated reasons lean on wanting a clear, correct answer rather than their own gut feel.',
+    "Cialdini: deference to authority is strongest when the audience lacks their own technical framework for the decision. Best fit: a player whose stated reasons show no independent technical or numeric reasoning of their own (gut-feel or habit-based reasons), who has not pushed back on expert-sourced advice before.",
   social_proof:
-    'best fit: a player who has referenced wanting to avoid standing out, or has responded well before to hearing what the overall trend is doing -- weak fit for a player who has explicitly said they do not care what others choose.',
+    'Cialdini: social proof persuades most under uncertainty about the correct choice. Best fit: a player whose stated reasons show hesitation, indecision, or explicit uncertainty -- weak fit for a player who has stated firm, independent conviction.',
   consistency:
-    'best fit: a player who has shown a genuinely stable, repeatable pattern across rounds you can credibly point back to -- weak fit for a player whose choices have been erratic or who has only one round of history.',
+    "Cialdini: the consistency pull is strongest when a prior choice was active and self-attributed in the player's own words, not accidental or imposed. Best fit: a player who has given their own explicit reasoning for a stable, repeated pattern across rounds.",
   reciprocity:
-    'best fit: a player who asks questions or gives detailed reasoning of their own, suggesting they want to understand the "why" before acting -- weak fit for a player who has shown impatience with long explanations.',
+    'Cialdini: the reciprocity norm is triggered most by a gift that comes first, unprompted, and feels personally tailored, not generic. Best fit: a player who has not yet been given a direct, personalized piece of insight in earlier rounds (as opposed to a templated pitch).',
   liking:
-    "best fit: a player whose stated reasons are personal or emotional (frustration, hassle, stress about the commute) rather than purely analytical -- weak fit for a player who reasons in purely numeric or logical terms.",
+    'Cialdini: liking builds through similarity, cooperation toward a shared goal, and familiarity from repeated contact. Best fit: a player the advisor has already interacted with across multiple rounds, where a track record of cooperative framing can be referenced.',
   scarcity:
-    'best fit: a player who has acted on urgency or timing in their own stated reasons, or has not responded well to cooperative/collective framing before.',
+    'Cialdini: scarcity persuades through loss-framing of a narrowing, freely-available opportunity -- a newly-closing option moves people more than a chronically scarce one. Best fit: a player facing a route whose current advantage is only now closing, not one that has already been framed as scarce for several rounds.',
   unity:
-    'best fit: a player who has shown any collective-minded reasoning (mentioning the group, other players, or the network as a whole) rather than purely self-interested reasoning.',
+    'Cialdini: unity ("we-ness") persuades through genuine shared identity -- a real shared fate or shared experience, not mere similarity -- and only works when that shared identity is credible. Best fit: any player, since every player genuinely shares the same road network and congestion outcome; strongest when this authentic shared-fate framing has not already been used on them recently.',
 }
 
 // Added after room 1DHB (Room 1's first full run) showed severe herding in
