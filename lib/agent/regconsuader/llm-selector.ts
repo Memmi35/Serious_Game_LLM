@@ -36,7 +36,14 @@
 import { ollama } from '@/lib/agent/ollama'
 import type { HistoryRow } from '@/lib/agent/context'
 import db from '@/lib/db'
-import { META_STRATEGIES, META_STRATEGIES_PRUNED, type MetaStrategy } from './prompts'
+import { META_STRATEGIES, META_STRATEGIES_PRUNED, STRATEGY_MATCH_CRITERIA, type MetaStrategy } from './prompts'
+
+// Matching-criteria toggle: SELECTOR_CRITERIA=on appends each active
+// strategy's STRATEGY_MATCH_CRITERIA line to the selector instruction, so
+// the model has real per-player matching guidance instead of just a list of
+// names. Defaults to off -- every past room (EQB1, TPG4) selected with no
+// matching guidance at all.
+const USE_MATCH_CRITERIA = process.env.SELECTOR_CRITERIA === 'on'
 
 // Vocabulary-pruning toggle: STRATEGY_VOCAB=pruned restricts both the
 // cold-start rotation and the LLM selector's own menu to the 4 strategies
@@ -88,16 +95,25 @@ function summarizePlayerHistory(history: HistoryRow[], strategiesUsed: Map<numbe
 // STRATEGY_VOCAB=pruned) stays in sync with prompts.ts's STRATEGY_FRAMINGS
 // without needing this string edited by hand whenever the vocabulary
 // changes.
+// When USE_MATCH_CRITERIA is on, each strategy gets its own "best fit" line
+// (STRATEGY_MATCH_CRITERIA) instead of just appearing as a bare name in the
+// list -- real per-player matching guidance rather than just a menu.
+const STRATEGY_MENU = USE_MATCH_CRITERIA
+  ? ACTIVE_STRATEGIES.map((s) => `- ${s}: ${STRATEGY_MATCH_CRITERIA[s]}`).join('\n')
+  : ACTIVE_STRATEGIES.join(', ')
+
 const STRATEGY_SELECTOR_INSTRUCTION = `
 You are choosing a persuasion strategy for the advisor to use with ONE
 specific player, for this round only. ${ACTIVE_STRATEGIES.length} strategies
-are available: ${ACTIVE_STRATEGIES.join(', ')}.
+are available${USE_MATCH_CRITERIA ? ', each with a best-fit description below' : ''}:
+${STRATEGY_MENU}
 
 Below is this player's own history in the game so far, including which
 strategy the advisor used on them each past round and how they responded.
-Reason ONLY from this player's own pattern -- if a strategy already failed
-on them, prefer a different one for this round; if one seems to be working,
-you can reinforce it. Do not assume anything about other players.
+Reason ONLY from this player's own pattern${USE_MATCH_CRITERIA ? " -- match the strategy whose best-fit description above most closely matches what this player's own history actually shows" : ''}; if a
+strategy already failed on them, prefer a different one for this round; if
+one seems to be working, you can reinforce it. Do not assume anything
+about other players.
 
 You MUST include both fields below — a response missing "reasoning" is
 invalid and will be discarded. Respond with ONLY a JSON object, no other

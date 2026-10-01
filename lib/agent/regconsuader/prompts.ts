@@ -67,6 +67,34 @@ export const STRATEGY_FRAMINGS: Record<MetaStrategy, string> = {
     'For this round, lead with unity: frame the recommendation in terms of a shared identity — "we" as everyone navigating this same network together — so following it reads as contributing to a shared outcome, not just a personal choice.',
 }
 
+// Per-strategy matching criteria for the LLM selector (llm-selector.ts's
+// STRATEGY_SELECTOR_INSTRUCTION). Added because the selector was previously
+// given only a bare list of strategy names and a weak "don't repeat a
+// failure" heuristic, with no guidance on which player/history pattern
+// actually calls for which principle -- a smoke test (TPG4) showed that
+// pruning the vocabulary down to the apparently-strongest 4 strategies
+// backfired (consistency's own compliance rate dropped 87.6% -> 78.7%)
+// because players who needed a dropped strategy got mismatched onto a
+// remaining one instead. This keeps the full 7-option palette and instead
+// gives the model real matching criteria, so it can place players better
+// without removing any option.
+export const STRATEGY_MATCH_CRITERIA: Record<MetaStrategy, string> = {
+  authority:
+    'best fit: a player who has not expressed distrust of the system-optimal calculation itself, and whose stated reasons lean on wanting a clear, correct answer rather than their own gut feel.',
+  social_proof:
+    'best fit: a player who has referenced wanting to avoid standing out, or has responded well before to hearing what the overall trend is doing -- weak fit for a player who has explicitly said they do not care what others choose.',
+  consistency:
+    'best fit: a player who has shown a genuinely stable, repeatable pattern across rounds you can credibly point back to -- weak fit for a player whose choices have been erratic or who has only one round of history.',
+  reciprocity:
+    'best fit: a player who asks questions or gives detailed reasoning of their own, suggesting they want to understand the "why" before acting -- weak fit for a player who has shown impatience with long explanations.',
+  liking:
+    "best fit: a player whose stated reasons are personal or emotional (frustration, hassle, stress about the commute) rather than purely analytical -- weak fit for a player who reasons in purely numeric or logical terms.",
+  scarcity:
+    'best fit: a player who has acted on urgency or timing in their own stated reasons, or has not responded well to cooperative/collective framing before.',
+  unity:
+    'best fit: a player who has shown any collective-minded reasoning (mentioning the group, other players, or the network as a whole) rather than purely self-interested reasoning.',
+}
+
 // Added after room 1DHB (Room 1's first full run) showed severe herding in
 // later rounds — e.g. round 5, optimal wanted {A:0, B:16, C:14} but actual
 // landed at {A:4, B:24, C:2} (30.2% gap), vs. PersuLLM-1's equivalent room
