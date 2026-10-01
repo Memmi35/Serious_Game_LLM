@@ -36,7 +36,14 @@
 import { ollama } from '@/lib/agent/ollama'
 import type { HistoryRow } from '@/lib/agent/context'
 import db from '@/lib/db'
-import { META_STRATEGIES, type MetaStrategy } from './prompts'
+import { META_STRATEGIES, META_STRATEGIES_PRUNED, type MetaStrategy } from './prompts'
+
+// Vocabulary-pruning toggle: STRATEGY_VOCAB=pruned restricts both the
+// cold-start rotation and the LLM selector's own menu to the 4 strategies
+// that measured at or above V2's compliance baseline on room EQB1 (see
+// prompts.ts's META_STRATEGIES_PRUNED for the measured rates). Defaults to
+// the full 7 -- every past room (including EQB1 itself) used the full set.
+const ACTIVE_STRATEGIES = process.env.STRATEGY_VOCAB === 'pruned' ? META_STRATEGIES_PRUNED : META_STRATEGIES
 
 // Deterministic hash-based pick, same technique as lib/scenarios.ts's
 // seededRandom -- used for the round-1 cold start (no history to reason
@@ -47,8 +54,8 @@ function deterministicStrategyForSession(sessionId: string): MetaStrategy {
   for (let i = 0; i < sessionId.length; i++) {
     h = (Math.imul(31, h) + sessionId.charCodeAt(i)) | 0
   }
-  const idx = Math.abs(h) % META_STRATEGIES.length
-  return META_STRATEGIES[idx]
+  const idx = Math.abs(h) % ACTIVE_STRATEGIES.length
+  return ACTIVE_STRATEGIES[idx]
 }
 
 async function fetchStrategiesUsed(sessionId: string): Promise<Map<number, MetaStrategy>> {
@@ -75,15 +82,16 @@ function summarizePlayerHistory(history: HistoryRow[], strategiesUsed: Map<numbe
     .join('\n')
 }
 
-// Built from META_STRATEGIES rather than hardcoded, so the strategy
-// vocabulary (originally 3 -- authority/social_proof/consistency -- now
-// the full Cialdini (2021) 7-principle set) stays in sync with prompts.ts's
-// STRATEGY_FRAMINGS without needing this string edited by hand whenever
-// the vocabulary changes.
+// Built from ACTIVE_STRATEGIES rather than hardcoded, so the strategy
+// vocabulary (originally 3 -- authority/social_proof/consistency -- then
+// the full Cialdini (2021) 7-principle set, now optionally pruned to 4 via
+// STRATEGY_VOCAB=pruned) stays in sync with prompts.ts's STRATEGY_FRAMINGS
+// without needing this string edited by hand whenever the vocabulary
+// changes.
 const STRATEGY_SELECTOR_INSTRUCTION = `
 You are choosing a persuasion strategy for the advisor to use with ONE
-specific player, for this round only. ${META_STRATEGIES.length} strategies
-are available: ${META_STRATEGIES.join(', ')}.
+specific player, for this round only. ${ACTIVE_STRATEGIES.length} strategies
+are available: ${ACTIVE_STRATEGIES.join(', ')}.
 
 Below is this player's own history in the game so far, including which
 strategy the advisor used on them each past round and how they responded.
@@ -94,7 +102,7 @@ you can reinforce it. Do not assume anything about other players.
 You MUST include both fields below — a response missing "reasoning" is
 invalid and will be discarded. Respond with ONLY a JSON object, no other
 text, in this exact shape, both keys required:
-{"strategy": ${META_STRATEGIES.map((s) => `"${s}"`).join(' | ')}, "reasoning": "1 short sentence explaining why this player specifically"}
+{"strategy": ${ACTIVE_STRATEGIES.map((s) => `"${s}"`).join(' | ')}, "reasoning": "1 short sentence explaining why this player specifically"}
 `
 
 type StrategyChoice = { strategy: MetaStrategy; reasoning: string | null }
@@ -113,7 +121,7 @@ function parseStrategyChoice(raw: string): StrategyChoice | null {
     const parsed = JSON.parse(raw)
     if (
       parsed &&
-      META_STRATEGIES.includes(parsed.strategy) &&
+      ACTIVE_STRATEGIES.includes(parsed.strategy) &&
       typeof parsed.reasoning === 'string' &&
       parsed.reasoning.trim().length > 0
     ) {

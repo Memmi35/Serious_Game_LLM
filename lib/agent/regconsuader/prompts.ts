@@ -35,6 +35,17 @@ export const META_STRATEGIES: MetaStrategy[] = [
   'unity',
 ]
 
+// Pruned subset: the 4 strategies that measured at or above V2's (no-
+// selector) compliance baseline on room EQB1 (social_proof 90.0%, unity
+// 89.5%, consistency 87.6%, scarcity 85.7%, n=14-105 each), dropping the
+// 3 that measured below it (authority 77.8% n=9, reciprocity 76.0% n=25,
+// liking 70.0% n=10). Opt-in via STRATEGY_VOCAB=pruned in llm-selector.ts
+// -- tests whether removing the weak framings closes V4's compliance gap
+// with V2 without touching advice quality (EQB1's hypothetical-100%-
+// compliance gap was already on par with V2's). Caveat: this prune is
+// fit to one population (Pop50, this seed) and may not generalize.
+export const META_STRATEGIES_PRUNED: MetaStrategy[] = ['social_proof', 'unity', 'consistency', 'scarcity']
+
 // One tactical framing line per strategy, appended to the per-round prompt.
 // These are deliberately separate from the base system prompt above so the
 // same identity/constraint can be reused across strategies without
