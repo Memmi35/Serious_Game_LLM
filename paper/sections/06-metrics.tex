@@ -1,0 +1,44 @@
+\section{Evaluation Metrics}
+\label{sec:metrics}
+
+We evaluate every condition on three families of metrics: traffic performance, behavioural response and dialogue quality. Unless stated otherwise, the metrics are computed on the players' decisions after the persuasion exchange (\cref{sec:platform:protocol}) and pooled over the five rounds of a session. Let $n_r^{(k)}$ be the number of players on route $r$ in round $k$, $T_r^{(k)}$ the resulting BPR route time, and $\mathbf{n}^{\ast(k)}$ the system-optimal split of \cref{eq:so}.
+
+\subsection{Traffic performance}
+\paragraph{Total travel time.}
+$T^{\mathrm{act}}_{\mathrm{tt}} = \sum_{k=1}^{R} \sum_{r} n_r^{(k)} T_r^{(k)}(\mathbf{n}^{(k)})$, and analogously $T^{\ast}_{\mathrm{tt}}$ under the optimal splits.
+
+\paragraph{Gap to optimal.} The main outcome is the relative excess of realised over optimal total travel time, pooled over rounds:
+\begin{equation}
+  \gap \;=\; \frac{T^{\mathrm{act}}_{\mathrm{tt}} - T^{\ast}_{\mathrm{tt}}}{T^{\mathrm{act}}_{\mathrm{tt}}} \times 100\%.
+  \label{eq:gap}
+\end{equation}
+Pooling before normalising means that each round is weighted by its actual cost. It also keeps the metric in $[0, 100)$. An earlier variant that averaged per-round percentages gave inconsistent rankings when rounds differed widely in scale, and we no longer use it.
+
+\paragraph{Hypothetical gap.} \cref{eq:gap} is computed from the route players actually chose, which conflates two things: how good the advisor's recommendation was, and how often players followed it. To isolate the first from the second, we also compute the same quantity under the counterfactual assumption that every player took exactly the route the advisor recommended, rather than their own \texttt{initial\_choice}:
+\begin{equation}
+  \gap^{\mathrm{hyp}} \;=\; \frac{T^{\mathrm{rec}}_{\mathrm{tt}} - T^{\ast}_{\mathrm{tt}}}{T^{\mathrm{rec}}_{\mathrm{tt}}} \times 100\%,
+  \label{eq:gap-hyp}
+\end{equation}
+where $T^{\mathrm{rec}}_{\mathrm{tt}} = \sum_{k=1}^{R} \sum_{r} n_r^{(k),\mathrm{rec}} T_r^{(k)}(\mathbf{n}^{(k),\mathrm{rec}})$ and $n_r^{(k),\mathrm{rec}}$ is the number of players the advisor recommended route $r$ to in round $k$, regardless of what they actually chose. $\gap^{\mathrm{hyp}}$ uses the same BPR cost function, the same per-round optimal split, and the same pooling as \cref{eq:gap} -- only the route counts feeding it differ. Comparing $\gap$ against $\gap^{\mathrm{hyp}}$ for a given condition shows whether compliance is helping or hurting: $\gap > \gap^{\mathrm{hyp}}$ means real-world execution makes the outcome worse than the advisor's own plan would have; $\gap < \gap^{\mathrm{hyp}}$ means imperfect compliance is correcting for a plan that was not well calibrated to begin with.
+
+\paragraph{Total delay.} Realised travel time minus the free-flow travel time of the chosen routes, summed over players and rounds. It isolates the part of travel time caused by congestion.
+
+\paragraph{Congested links.} The number of link--round pairs whose volume-to-capacity ratio, including background flow, exceeds 2.
+
+\paragraph{Ideal baseline.} For each continuous traffic metric we also report the value it would take if every round were played at its exact system-optimal split. This is the best any advisor could achieve on the same topology and population size. \todo{Confirm we report this as its own row in the results tables.}
+
+\subsection{Behavioural response}
+\paragraph{Compliance.} The share of decisions in which the player chose the route the advisor recommended in its opening pitch. With three routes, a player who ignored the advice and chose uniformly at random would comply $33.3\%$ of the time. This is the chance level against which compliance should be read.
+
+\paragraph{Disclosure rate.} The share of advisor turns that state a live count or distribution figure, detected with a regular-expression matcher. It measures how well the numbers-suppression rule (C2) is followed.
+
+\subsection{Dialogue quality}
+Every opening-pitch exchange is scored by an LLM judge (\texttt{deepseek-r1:32b}), which is held fixed across all conditions and is different from the advisor model in most of them \verify{deepseek-r1:32b judges its own transcripts in the deepseek condition, which is a known self-preference risk; mention it in the limitations}. Following \citet{zheng2023judge} and the rubric style of MA2P \citep{zhang2024ma2p}, each dimension is scored in a separate call on an anchored 1--10 scale. The judge is asked to imagine being the persuadee and to apply strict standards:
+\begin{itemize}
+  \item \textbf{Persuasiveness}: how compelling the argument is at making the persuadee want to follow the recommendation;
+  \item \textbf{Logical coherence}: whether the reasoning is clear, internally consistent and free of obvious flaws.
+\end{itemize}
+Anchors are given at 1, 4, 6, 8 and 10 as first-person descriptions of the persuadee's reaction. The full rubrics are given in \todo{Appendix}.
+
+\subsection{Cost}
+We report the mean wall-clock time per decision as a measure of the advisor's computational cost. All models run on the same hardware \todo{GPU model} with the same serving configuration.

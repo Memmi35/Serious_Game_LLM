@@ -1,0 +1,73 @@
+% ===========================================================================
+%  Journal article -- LLM-based persuasive route guidance toward the
+%  system optimum, evaluated on a simulated population in a serious game.
+%
+%  Overleaf: upload this whole `paper/` folder (main.tex, sections/, tables/,
+%  figures/, references.bib) and set main.tex as the main document.
+%
+%  The class is a neutral `article` for drafting. Once the target journal is
+%  chosen, swap it for the journal's class (e.g. elsarticle for Elsevier /
+%  Transportation Research Part C) -- all content lives in sections/ so only
+%  this preamble changes.
+% ===========================================================================
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,allcolors=blue!50!black]{hyperref}
+\usepackage[capitalise]{cleveref}
+
+% --- drafting helpers (remove before submission) ---------------------------
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\newcommand{\verify}[1]{\textcolor{orange}{\textbf{[CHECK: #1]}}}
+
+% --- notation --------------------------------------------------------------
+\newcommand{\persullm}{PersuLLM-1}
+\newcommand{\regcon}{RegConSuader}
+\newcommand{\gap}{\mathrm{Gap}}
+\newcommand{\deltaval}[1]{\textcolor{gray!70!black}{\scriptsize(#1)}}
+
+\title{Persuading Toward the System Optimum:\\
+LLM-Based Conversational Route Guidance Evaluated\\
+on a Simulated Commuter Population}
+% \todo{final title}
+
+\author{
+  Fares Memmi \\
+  \small EMob-Lab, Universit\'e Gustave Eiffel / ENTPE
+  % \todo{co-authors, affiliations, corresponding author}
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{sections/00-abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-platform}
+\input{sections/04-population}
+\input{sections/05-architectures}
+\input{sections/06-metrics}
+\input{sections/07-experimental-design}
+\input{sections/08-results}
+\input{sections/09-discussion}
+\input{sections/10-conclusion}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\input{sections/11-appendix}
+
+\end{document}

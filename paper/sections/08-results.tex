@@ -1,0 +1,140 @@
+\section{Results}
+\label{sec:results}
+
+% ---------------------------------------------------------------------------
+% NOTE FOR AUTHORS -- which result set is canonical?
+% The population changed on 2026-09-25 (dropped the 2 non-car-owning Anable
+% segments -> 16/14/10/10). Per the commit message, rooms run before that
+% used the old 6-segment population. Status of the 50-agent rooms:
+%   * Ablation series (qwen2.5:32b): TQ1H, FNZP, F0FG, 8WDY, T5Y2, 6DQM, 5U0F
+%       -> run on the FINAL 4-segment population.
+%   * No-advisor Y364 (2026-09-17) -> OLD population.
+%   * FinalBatch 2026-09-23, PersuLLM-1: GA61, VSN1, F9JY, 1EQQ -> OLD population.
+%   * FinalBatch "regconsuader" 7UUG, VWQT, D5ZT -> OLD population AND the
+%       routing bug (actually ran PersuLLM-1 endpoints) -> NOT usable.
+%   * FinalBatchFixedSelector 9P9F, JD81, 2L64, 9N8N -> real RegConSuader,
+%       OLD population.
+% Decide: rerun Study 1 + no-advisor on the final population, or report the
+% 09-23 batch explicitly as the 6-segment population.
+% ---------------------------------------------------------------------------
+
+\subsection{Study 1: Architecture comparison across models}
+\todo{Pending the canonical-set decision. Planned table: rows = 4 models $\times$ \{\persullm, \regcon\} + no-advisor + ideal baseline; columns = Gap, total travel time, total delay, congested links, compliance, persuasiveness, logic, ms/decision.}
+
+For reference, the numbers from the 2026-09-23 batch (old population, first-choice protocol) are listed below. \textbf{They should not be quoted until the canonical-set decision above is made.}
+
+\begin{table}[h]
+\centering
+\small
+\caption{\todo{PROVISIONAL} Study 1, 2026-09-23 batch ($N=50$, 6-segment population). No-advisor reference: gap 27.53\%, total travel time 5853.5, delay 3889.7, 12 congested links.}
+\label{tab:study1-provisional}
+\begin{tabular}{llrrrrrrr}
+\toprule
+Model & Advisor & Gap \% & $T_{\mathrm{tt}}$ & Delay & Cong. & Compl. \% & Pers. & Logic \\
+\midrule
+\multirow{2}{*}{qwen2.5:32b}     & \persullm & 6.35 & 4530.2 & 2546.3 & 6 & 76.8 & 7.68 & 8.04 \\
+                                 & \regcon   & 4.12 & 4424.5 & 2433.0 & 5 & 76.4 & 7.89 & 8.19 \\
+\multirow{2}{*}{qwen2.5:7b}      & \persullm & 7.68 & 4595.2 & 2615.3 & 6 & 73.2 & 7.42 & 7.97 \\
+                                 & \regcon   & 12.26 & 4835.4 & 2855.2 & 8 & 64.4 & 7.70 & 7.96 \\
+\multirow{2}{*}{deepseek-r1:32b} & \persullm & 2.54 & 4352.9 & 2367.4 & 5 & 71.2 & 7.83 & 8.16 \\
+                                 & \regcon   & 3.49 & 4395.7 & 2407.4 & 5 & 64.8 & 7.90 & 8.31 \\
+\multirow{2}{*}{qwq:32b}         & \persullm & 1.06 & 4287.8 & 2299.3 & 5 & 86.0 & 8.10 & 8.24 \\
+                                 & \regcon   & 1.96 & 4327.0 & 2339.6 & 5 & 76.0 & 8.13 & 8.44 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Study 2: Component ablation}
+
+The component ablation below uses the advisor live-view design (\cref{sec:architectures}\todo{cross-ref the live-view subsection once numbered}): the advisor's own context is recomputed from this round's in-progress choices rather than a frozen per-round snapshot, while the simulated player's own view stays static, as in every other condition in this paper. An earlier version of this ablation gave the advisor the same frozen view as the player; we do not report those numbers here, since diagnosing why they were misleading (\cref{sec:results:livefix}\todo{cross-ref}) is itself part of the contribution.
+
+\begin{table*}[t]
+\centering
+\small
+\renewcommand{\arraystretch}{1.1}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l c c c c c c c c}
+\toprule
+
+& \multicolumn{5}{c}{\textbf{Performance Metrics}} & \multicolumn{3}{c}{\textbf{Persuasion Metrics}} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-9}
+
+\textbf{Cell}
+& \textbf{Total Travel Time}
+& \textbf{Total Delay}
+& \textbf{Congested Edges $\tau{>}2$}
+& \textbf{Gap-to-Optimal ($\downarrow$)}
+& \textbf{Hypothetical Gap ($\downarrow$)}
+& \textbf{Compliance ($\uparrow$)}
+& \textbf{Persuasive ($\uparrow$)}
+& \textbf{Logic ($\uparrow$)}
+\\
+
+\midrule
+
+V1 (baseline)
+& 4892.75
+& 2908.42
+& 10
+& 13.29\%
+& 6.16\%
+& 73.60\%
+& 7.58
+& 8.12
+\\
+
+V2 (+C1, structured prompt + anti-herding)
+& \textbf{4393.01}$^\star$ \deltaval{-499.74}
+& \textbf{2406.53}$^\star$ \deltaval{-501.89}
+& \textbf{5}$^\star$
+& \textbf{3.43\%}$^\star$
+& 3.38\%
+& \textbf{89.20\%}$^\star$
+& 7.95
+& 8.08
+\\
+
+V3 (+C1+C2, numbers suppression)
+& 4463.37 \deltaval{-429.38}
+& 2473.75 \deltaval{-434.67}
+& \textbf{5}$^\star$
+& 4.95\%
+& 3.47\%
+& 76.80\%
+& 7.91
+& 8.28
+\\
+
+V4 (+C1+C3, LLM selector, 7 strategies)
+& 4435.30 \deltaval{-457.45}
+& 2449.18 \deltaval{-459.24}
+& \textbf{5}$^\star$
+& 4.35\%
+& \textbf{3.33\%}$^\star$
+& 86.00\%
+& \textbf{7.96}$^\star$
+& \textbf{8.36}$^\star$
+\\
+
+\bottomrule
+\end{tabular}%
+}
+\caption{Component ablation, \texttt{qwen2.5:32b}, advisor live view, final population ($N=50$, 250 first-choice decisions per cell, single run per cell). $\star$ marks the best value in each column. Deltas are relative to V1. Hypothetical Gap (\cref{eq:gap-hyp}) is the gap that would result if every player had taken exactly what the advisor recommended, isolating the advisor's own recommendation quality from compliance.}
+\label{tab:ablation}
+\end{table*}
+\todo{Add disclosure rate for ablation rooms; replicates for V2 and V4 in progress at time of writing.}
+
+\paragraph{Reading the table.}
+\begin{itemize}
+  \item \textbf{V2 is the best-performing cell overall on traffic and compliance}, and is tied for best on hypothetical gap -- structure plus the anti-herding guard alone, with no selector and no suppression, is doing essentially all of the work.
+  \item \textbf{Numbers suppression (C2) is a net negative}: V3 is worse than V2 on every traffic metric and loses 12 points of compliance, for no gain in hypothetical gap.
+  \item \textbf{The selector (C3) wins on both judge-scored dimensions} (persuasiveness and logic) but trails V2 on traffic and compliance -- a genuine performance-versus-persuasiveness tension, not a single clear winner.
+  \item \textbf{All three structured cells (V2, V3, V4) cluster tightly on hypothetical gap} (3.33--3.47\%), far below V1's (6.16\%). The anti-herding guard is what keeps the advisor's own recommendations well calibrated regardless of which other component is present; V1's much larger gap between its hypothetical (6.16\%) and actual (13.29\%) gap shows what happens when the advisor is given no instruction for how to use what it sees.
+  \item A within-condition breakdown of V4's 7 strategies showed a wide spread in compliance by framing (\texttt{social\_proof} 90.0\%, \texttt{unity} 89.5\%, \texttt{consistency} 87.6\%, \texttt{scarcity} 85.7\%, versus \texttt{authority} 77.8\%, \texttt{reciprocity} 76.0\%, \texttt{liking} 70.0\%) -- V4's lower aggregate compliance relative to V2 is attributable to the three weaker framings pulling the average down, not to a weakness in the mechanism itself. \todo{Report the pruned-vocabulary (4-strategy) follow-up once that run completes.}
+\end{itemize}
+
+\subsection{Per-scenario analysis}
+\todo{Per-round gap and route distribution vs.\ optimal for each condition (figure). Earlier runs showed the Network Disruption and Express Corridor rounds are where designs differ most.}
+
+\subsection{Dialogue quality and disclosure}
+\todo{Judge scores; disclosure rate per model; the measured association between quoting live counts and lower logic scores (pooled $\Delta_{\text{logic}} \approx -0.24$ in the 30-agent \persullm{} rooms); model-dependence of suppression reliability (0\% leakage for qwen2.5:32b, about 25\% for qwen2.5:7b in the 30-agent runs).}
